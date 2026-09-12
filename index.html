@@ -241,6 +241,17 @@
   .armed-tag.hit-high{border-color:var(--up); color:var(--up);}
   .armed-tag.hit-low{border-color:var(--down); color:var(--down);}
 
+  .benefit-line{
+    font-family:var(--slab);
+    font-size:12px;
+    color:var(--bone-dim);
+    margin-top:4px;
+    padding-left:30px;
+    line-height:1.4;
+  }
+  .benefit-line .met{color:var(--up);}
+  .benefit-line .need{color:var(--gold-dim);}
+
   .range-line{
     font-family:var(--mono);
     font-size:11.5px;
@@ -269,6 +280,27 @@
     width:100%;
   }
   .suggestion-line .amt{color:var(--gold);}
+
+  .signals-box{margin-bottom:16px;}
+  .signals-box:empty{margin-bottom:0;}
+  .signal-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    background:var(--panel-2);
+    border:1px solid var(--edge);
+    border-radius:4px;
+    padding:10px 12px;
+    margin-bottom:8px;
+    font-family:var(--mono);
+    font-size:12.5px;
+  }
+  .signal-row.buy{border-left:3px solid var(--up);}
+  .signal-row.sell{border-left:3px solid var(--down);}
+  .signal-row .signal-name{color:var(--bone); font-family:var(--slab); font-weight:700; font-size:13.5px;}
+  .signal-row .signal-name .acr{color:var(--gold-dim); font-weight:400; font-size:11px;}
+  .signal-row .signal-text{color:var(--bone-dim); margin-left:auto;}
 
   .empty{
     color:var(--bone-dim);
@@ -337,9 +369,11 @@
       <details class="help">
         <summary>?</summary>
         <div class="help-body">
-          Check a stock to start watching it. "Notify below/above" are the prices that trigger an alert — leave either blank to skip that direction.<br><br>
-          "Range so far" is the lowest and highest price this app has seen since you opened it (Torn's basic API doesn't hand over full history). The tag next to it — near session low / mid-range / near session high — just shows where today's price sits in that range.<br><br>
-          If a stock is near its low and you've entered a budget, it'll suggest how many shares that budget could buy. This is a simple rule of thumb, not a prediction — prices can keep moving either way.
+          Check a stock to start watching it. "Notify below/above" are fixed prices that trigger an alert. "Or if it drops/rises %" is an alternative — it locks in the current price as a baseline the moment you set it, and alerts once the price moves that % away from that baseline. Leave any of these blank to skip.<br><br>
+          "Range so far" is the lowest and highest price this app has seen since you opened it (Torn's basic API doesn't hand over full history). The "% of range" number is just where today's price sits between that low and high — 0% is the session low, 100% is the session high. It's a description of the past, not a forecast: it can't tell you where the price is headed next, and Torn's market can move against it at any time.<br><br>
+          "Watched only" hides everything except your checked stocks, useful once your list gets long.<br><br>
+          Where Torn provides it, a line under the range shows that stock's investor benefit, based on what you've entered in "You own." Active benefits (money, items, etc.) pay out on a repeating schedule and scale in "Benefit Block" steps — the 1st increment needs one block of shares, the 2nd needs 3 blocks total, the 3rd needs 7, doubling each time — so it shows your current increment and how many more shares unlock the next one. Passive benefits (like a bank interest or racing boost) are a single on/off perk that needs the share count held for 7 days straight.<br><br>
+          If a watched stock is near its low and you've entered a budget, it appears above as a buy signal with a suggested share count. If you own shares in one that's near its high, it appears as a "consider selling" flag instead.
         </div>
       </details>
     </h2>
@@ -347,6 +381,10 @@
       <div>
         <label for="stockFilter">Filter by name or ticker</label>
         <input id="stockFilter" type="text" placeholder="e.g. sym or tcm">
+      </div>
+      <div style="flex:none; display:flex; align-items:center; gap:6px; padding-bottom:9px;">
+        <input type="checkbox" id="watchedOnlyToggle" style="width:16px; height:16px; accent-color:var(--gold);">
+        <label for="watchedOnlyToggle" style="margin:0; white-space:nowrap;">Watched only</label>
       </div>
       <div style="flex:none; width:170px;">
         <label for="budgetInput">Cash to invest
@@ -382,6 +420,7 @@
         <div class="help-body">Fetches how many shares you actually own straight from Torn and fills in "You own" for you. Needs a key with the "user → stocks" selection — use "Build a key for this app" in section 1 if you haven't already. If the key doesn't have that access, this will just tell you so; nothing breaks.</div>
       </details>
     </div>
+    <div id="signalsBox" class="signals-box"></div>
     <div id="portfolioSummary" class="status-line" style="margin-bottom:10px;"></div>
     <div id="stockList"><div class="empty">Connect your API key above to load the stock list.</div></div>
     <div class="status-line" id="pollStatus"></div>
@@ -425,8 +464,10 @@
   const keyStatus = $('keyStatus');
   const notifBtn = $('notifBtn');
   const stockFilter = $('stockFilter');
+  const watchedOnlyToggle = $('watchedOnlyToggle');
   const stockList = $('stockList');
   const portfolioSummary = $('portfolioSummary');
+  const signalsBox = $('signalsBox');
   const budgetInput = $('budgetInput');
   const pollStatus = $('pollStatus');
   const pollIntervalSel = $('pollInterval');
@@ -450,6 +491,7 @@
   const STORE_WATCHES = 'torn-stock-watches';
   const STORE_RANGES = 'torn-stock-ranges';
   const STORE_BUDGET = 'torn-stock-budget';
+  const STORE_WATCHED_ONLY = 'torn-stock-watched-only';
 
   function setStatus(el, msg, type){
     el.textContent = msg || '';
@@ -473,6 +515,10 @@
       const b = localStorage.getItem(STORE_BUDGET);
       if(b){ budget = parseFloat(b); budgetInput.value = budget; }
     }catch(e){ /* no budget saved yet */ }
+    try{
+      const wo = localStorage.getItem(STORE_WATCHED_ONLY);
+      watchedOnlyToggle.checked = !!wo;
+    }catch(e){ /* default unchecked */ }
     if(apiKey){
       setStatus(keyStatus, 'Key loaded from this device.', 'ok');
       await refreshStocks(true);
@@ -547,7 +593,7 @@
       }
       stocksCache = {};
       Object.values(data.stocks).forEach(s => {
-        stocksCache[s.stock_id] = { name: s.name, acronym: s.acronym, price: s.current_price };
+        stocksCache[s.stock_id] = { name: s.name, acronym: s.acronym, price: s.current_price, benefit: s.benefit || null, totalShares: s.total_shares };
       });
       if(announce) setStatus(keyStatus, `Key works — ${Object.keys(stocksCache).length} stocks loaded.`, 'ok');
       updateRanges();
@@ -572,15 +618,22 @@
 
   function renderStockList(){
     const term = stockFilter.value.trim().toLowerCase();
+    const watchedOnly = watchedOnlyToggle.checked;
     const all = Object.entries(stocksCache)
       .map(([id, s]) => ({ id, ...s }))
       .filter(s => !term || s.name.toLowerCase().includes(term) || s.acronym.toLowerCase().includes(term))
+      .filter(s => !watchedOnly || !!watches[s.id])
       .sort((a,b) => a.name.localeCompare(b.name));
 
     if(!all.length){
-      stockList.innerHTML = `<div class="empty">${Object.keys(stocksCache).length ? 'No stocks match that filter.' : 'Connect your API key above to load the stock list.'}</div>`;
+      const msg = watchedOnly && Object.keys(stocksCache).length
+        ? "You haven't checked any stocks yet — turn off \"Watched only\" to browse and pick some."
+        : (Object.keys(stocksCache).length ? 'No stocks match that filter.' : 'Connect your API key above to load the stock list.');
+      stockList.innerHTML = `<div class="empty">${msg}</div>`;
       return;
     }
+
+    const signalsSummary = [];
 
     stockList.innerHTML = all.map(s => {
       const w = watches[s.id];
@@ -592,6 +645,14 @@
       if(w){
         if(w.high !== null) tags.push(`<span class="armed-tag ${w.armedHigh ? '' : 'hit-high'}">${w.armedHigh ? 'watching above ' + w.high : 'alerted · above ' + w.high}</span>`);
         if(w.low !== null) tags.push(`<span class="armed-tag ${w.armedLow ? '' : 'hit-low'}">${w.armedLow ? 'watching below ' + w.low : 'alerted · below ' + w.low}</span>`);
+        if(w.pctDropPct){
+          const target = (w.pctDropBase * (1 - w.pctDropPct / 100)).toFixed(2);
+          tags.push(`<span class="armed-tag ${w.armedPctDrop ? '' : 'hit-low'}">${w.armedPctDrop ? `watching -${w.pctDropPct}% (below $${target})` : `alerted · dropped ${w.pctDropPct}%`}</span>`);
+        }
+        if(w.pctRisePct){
+          const target = (w.pctRiseBase * (1 + w.pctRisePct / 100)).toFixed(2);
+          tags.push(`<span class="armed-tag ${w.armedPctRise ? '' : 'hit-high'}">${w.armedPctRise ? `watching +${w.pctRisePct}% (above $${target})` : `alerted · rose ${w.pctRisePct}%`}</span>`);
+        }
       }
 
       const r = ranges[s.id];
@@ -605,15 +666,51 @@
         if(pct <= 0.33) sig = { cls:'buy', label:'near session low' };
         else if(pct >= 0.66) sig = { cls:'high', label:'near session high' };
 
-        rangeLine = `<div class="range-line">Range so far: $${r.low.toFixed(2)} – $${r.high.toFixed(2)} &nbsp;·&nbsp; <span class="signal-tag ${sig.cls}">${sig.label}</span></div>`;
+        rangeLine = `<div class="range-line">Range so far: $${r.low.toFixed(2)} – $${r.high.toFixed(2)} &nbsp;·&nbsp; <span class="signal-tag ${sig.cls}">${sig.label}</span> &nbsp;·&nbsp; <span title="Position within the observed range, not a forecast">${Math.round(pct*100)}% of range</span></div>`;
 
         if(checked && sig.cls === 'buy' && budget && budget > 0){
           const shares = Math.floor(budget / price);
           if(shares > 0){
             suggestion = `<div class="suggestion-line">Price is low in its recent range. At your $${budget.toLocaleString()} budget, that's <span class="amt">${shares.toLocaleString()} shares</span> (~$${(shares*price).toLocaleString(undefined,{maximumFractionDigits:2})}).</div>`;
+            signalsSummary.push({ type:'buy', name:s.name, acronym:s.acronym, text:`${shares.toLocaleString()} shares (~$${(shares*price).toLocaleString(undefined,{maximumFractionDigits:2})})` });
           }
+        }else if(checked && sig.cls === 'high' && w.owned > 0){
+          const proceeds = w.owned * price;
+          suggestion = `<div class="suggestion-line">You hold ${w.owned.toLocaleString()} shares and price is high in its recent range — one point to consider taking some profit, if that fits your plan. Selling all now would be worth ~$${proceeds.toLocaleString(undefined,{maximumFractionDigits:2})}.</div>`;
+          signalsSummary.push({ type:'sell', name:s.name, acronym:s.acronym, text:`${w.owned.toLocaleString()} shares worth ~$${proceeds.toLocaleString(undefined,{maximumFractionDigits:2})}` });
         }else if(checked && sig.cls === 'high'){
           suggestion = `<div class="suggestion-line">Price is high in its recent range — this isn't a signal to buy right now.</div>`;
+        }
+      }
+
+      let benefitLine = '';
+      if(s.benefit && s.benefit.requirement){
+        const bbSize = s.benefit.requirement; // shares needed per Benefit Block
+        const have = w && w.owned ? w.owned : 0;
+        const freqDays = s.benefit.frequency || null;
+        const price = Number(s.price);
+        const costOf = (shares) => `~$${(shares * price).toLocaleString(undefined,{maximumFractionDigits:2})}`;
+
+        if(s.benefit.type === 'active'){
+          const ownedBBs = Math.floor(have / bbSize);
+          const increment = ownedBBs > 0 ? Math.floor(Math.log2(ownedBBs + 1)) : 0;
+          const freqText = freqDays ? ` every ${freqDays} day${freqDays > 1 ? 's' : ''}` : '';
+          if(increment > 0){
+            const nextNeededBBs = Math.pow(2, increment + 1) - 1;
+            const nextNeededShares = (nextNeededBBs * bbSize) - have;
+            benefitLine = `<div class="benefit-line"><span class="met">✓ ${increment} increment${increment > 1 ? 's' : ''} active:</span> ${s.benefit.description}${freqText} — <span class="need">${nextNeededShares.toLocaleString()} more shares (${costOf(nextNeededShares)}) for the next increment</span></div>`;
+          }else{
+            const gap = bbSize - have;
+            benefitLine = `<div class="benefit-line">First increment at ${bbSize.toLocaleString()} shares: ${s.benefit.description}${freqText} — <span class="need">${gap.toLocaleString()} more shares (${costOf(gap)}) needed</span></div>`;
+          }
+        }else{
+          // passive: single unlock, activates after holding bbSize shares for 7 days
+          if(have >= bbSize){
+            benefitLine = `<div class="benefit-line"><span class="met">✓ Unlocked</span> (after 7 days holding): ${s.benefit.description}</div>`;
+          }else{
+            const gap = bbSize - have;
+            benefitLine = `<div class="benefit-line">Unlocks at ${bbSize.toLocaleString()} shares, held 7 days: ${s.benefit.description} — <span class="need">${gap.toLocaleString()} more shares (${costOf(gap)}) needed</span></div>`;
+          }
         }
       }
 
@@ -627,6 +724,7 @@
             <div class="price">$${Number(s.price).toFixed(2)}</div>
           </div>
           ${rangeLine}
+          ${benefitLine}
           <div class="thresh-panel">
             <div class="field">
               <label>Notify below</label>
@@ -635,6 +733,14 @@
             <div class="field">
               <label>Notify above</label>
               <input type="number" step="0.01" class="high-input" data-id="${s.id}" value="${high}" placeholder="e.g. 810.00">
+            </div>
+            <div class="field">
+              <label>Or if it drops %</label>
+              <input type="number" step="0.1" class="pct-drop-input" data-id="${s.id}" value="${w && w.pctDropPct ? w.pctDropPct : ''}" placeholder="e.g. 5">
+            </div>
+            <div class="field">
+              <label>Or if it rises %</label>
+              <input type="number" step="0.1" class="pct-rise-input" data-id="${s.id}" value="${w && w.pctRisePct ? w.pctRisePct : ''}" placeholder="e.g. 5">
             </div>
             <div class="field">
               <label>You own</label>
@@ -661,15 +767,22 @@
       });
     });
 
-    stockList.querySelectorAll('.low-input, .high-input, .owned-input').forEach(inp => {
+    stockList.querySelectorAll('.low-input, .high-input, .owned-input, .pct-drop-input, .pct-rise-input').forEach(inp => {
       inp.addEventListener('change', () => {
         const id = inp.dataset.id;
         const w = watches[id];
         if(!w) return;
+        const curPrice = stocksCache[id] ? Number(stocksCache[id].price) : null;
         if(inp.classList.contains('low-input')){
           w.low = inp.value === '' ? null : parseFloat(inp.value); w.armedLow = true;
         }else if(inp.classList.contains('high-input')){
           w.high = inp.value === '' ? null : parseFloat(inp.value); w.armedHigh = true;
+        }else if(inp.classList.contains('pct-drop-input')){
+          w.pctDropPct = inp.value === '' ? null : parseFloat(inp.value);
+          w.pctDropBase = curPrice; w.armedPctDrop = true;
+        }else if(inp.classList.contains('pct-rise-input')){
+          w.pctRisePct = inp.value === '' ? null : parseFloat(inp.value);
+          w.pctRiseBase = curPrice; w.armedPctRise = true;
         }else{
           w.owned = inp.value === '' ? 0 : parseFloat(inp.value);
         }
@@ -679,6 +792,7 @@
     });
 
     renderPortfolioSummary();
+    renderSignalsSummary(signalsSummary);
   }
 
   function renderPortfolioSummary(){
@@ -692,6 +806,23 @@
       return sum + (w.owned * price);
     }, 0);
     portfolioSummary.textContent = `Portfolio: ${held.length} stock${held.length > 1 ? 's' : ''} held, worth $${total.toLocaleString(undefined,{maximumFractionDigits:2})} at current prices.`;
+  }
+
+  function renderSignalsSummary(signals){
+    if(!Object.keys(watches).length){
+      signalsBox.innerHTML = '';
+      return;
+    }
+    if(!signals.length){
+      signalsBox.innerHTML = `<div class="empty">No buy or sell signals right now — none of your watched stocks are near their session low or high yet. This fills in as the app tracks prices over time.</div>`;
+      return;
+    }
+    signalsBox.innerHTML = signals.map(sig => `
+      <div class="signal-row ${sig.type}">
+        <span class="signal-tag ${sig.type === 'buy' ? 'buy' : 'high'}">${sig.type === 'buy' ? 'Buy signal' : 'Consider selling'}</span>
+        <span class="signal-name">${sig.name} <span class="acr">${sig.acronym}</span></span>
+        <span class="signal-text">${sig.text}</span>
+      </div>`).join('');
   }
 
   async function syncHoldings(){
@@ -739,6 +870,12 @@
 
   stockFilter.addEventListener('input', renderStockList);
 
+  watchedOnlyToggle.addEventListener('change', () => {
+    try{ localStorage.setItem(STORE_WATCHED_ONLY, watchedOnlyToggle.checked ? '1' : ''); }
+    catch(e){ /* non-fatal */ }
+    renderStockList();
+  });
+
   exportBtn.addEventListener('click', async () => {
     if(!Object.keys(watches).length){ setStatus(backupStatus, 'Nothing to back up yet — watch a stock first.', 'err'); return; }
     const payload = { v: 1, watches, budget };
@@ -783,7 +920,7 @@
       const data = await res.json();
       if(data.error){ setStatus(pollStatus, `Torn API error: ${data.error.error}`, 'err'); return; }
       Object.values(data.stocks).forEach(s => {
-        stocksCache[s.stock_id] = { name: s.name, acronym: s.acronym, price: s.current_price };
+        stocksCache[s.stock_id] = { name: s.name, acronym: s.acronym, price: s.current_price, benefit: s.benefit || null, totalShares: s.total_shares };
       });
       updateRanges();
       persistRanges();
@@ -807,6 +944,20 @@
             w.armedLow = false; changed = true;
           }else if(cur > w.low && !w.armedLow){
             w.armedLow = true; changed = true;
+          }
+        }
+        if(w.pctDropPct && w.pctDropBase && w.armedPctDrop){
+          const target = w.pctDropBase * (1 - w.pctDropPct / 100);
+          if(cur <= target){
+            notify(`${w.acronym} dropped ${w.pctDropPct}%`, `Now $${cur.toFixed(2)}, down from $${w.pctDropBase.toFixed(2)}.`);
+            w.armedPctDrop = false; changed = true;
+          }
+        }
+        if(w.pctRisePct && w.pctRiseBase && w.armedPctRise){
+          const target = w.pctRiseBase * (1 + w.pctRisePct / 100);
+          if(cur >= target){
+            notify(`${w.acronym} rose ${w.pctRisePct}%`, `Now $${cur.toFixed(2)}, up from $${w.pctRiseBase.toFixed(2)}.`);
+            w.armedPctRise = false; changed = true;
           }
         }
       });
