@@ -281,6 +281,26 @@
   }
   .suggestion-line .amt{color:var(--gold);}
 
+  .qr-output{
+    display:flex;
+    justify-content:center;
+    margin:4px 0 14px;
+  }
+  .qr-output:empty{margin:0;}
+  .qr-output img, .qr-output canvas{
+    border-radius:6px;
+    border:6px solid var(--panel-2);
+    background:#fff;
+  }
+  #qrVideo{
+    display:none;
+    width:100%;
+    max-width:320px;
+    border-radius:6px;
+    border:1px solid var(--edge);
+    margin-bottom:10px;
+  }
+
   .signals-box{margin-bottom:16px;}
   .signals-box:empty{margin-bottom:0;}
   .signal-row{
@@ -373,6 +393,7 @@
           "Range so far" is the lowest and highest price this app has seen since you opened it (Torn's basic API doesn't hand over full history). The "% of range" number is just where today's price sits between that low and high — 0% is the session low, 100% is the session high. It's a description of the past, not a forecast: it can't tell you where the price is headed next, and Torn's market can move against it at any time.<br><br>
           "Watched only" hides everything except your checked stocks, useful once your list gets long.<br><br>
           Where Torn provides it, a line under the range shows that stock's investor benefit, based on what you've entered in "You own." Active benefits (money, items, etc.) pay out on a repeating schedule and scale in "Benefit Block" steps — the 1st increment needs one block of shares, the 2nd needs 3 blocks total, the 3rd needs 7, doubling each time — so it shows your current increment and how many more shares unlock the next one. Passive benefits (like a bank interest or racing boost) are a single on/off perk that needs the share count held for 7 days straight.<br><br>
+          "Your avg buy price" is what you actually paid per share, on average — enter it to see real profit or loss next to "You own," not just current value. "Last collected" (for stocks with active payouts) is the last date you claimed the dividend in-game; the app uses it to count down to your next payout and can notify you when one's ready.<br><br>
           If a watched stock is near its low and you've entered a budget, it appears above as a buy signal with a suggested share count. If you own shares in one that's near its high, it appears as a "consider selling" flag instead.
         </div>
       </details>
@@ -430,12 +451,14 @@
     <h2>3. Back up your watchlist
       <details class="help">
         <summary>?</summary>
-        <div class="help-body">Your watchlist lives only in this browser. Copy a code here to move it to another device or browser — paste it there and load it.</div>
+        <div class="help-body">Your watchlist lives only in this browser. Copy a code, or show it as a QR code, to move it to another device — open this app there and either paste the code or scan the QR with "Scan a code." Scanning needs camera permission and only works over HTTPS (which Netlify/GitHub Pages already give you).</div>
       </details>
     </h2>
-    <div class="row" style="gap:10px;">
+    <div class="row" style="gap:10px; flex-wrap:wrap;">
       <button class="ghost" id="exportBtn">Copy watchlist code</button>
+      <button class="ghost" id="showQrBtn">Show as QR code</button>
     </div>
+    <div id="qrOutput" class="qr-output"></div>
     <div class="row" style="gap:10px; align-items:flex-end;">
       <div>
         <label for="importInput">Paste a code to load</label>
@@ -445,6 +468,11 @@
         <button class="primary" id="importBtn">Load</button>
       </div>
     </div>
+    <div class="row" style="gap:10px; align-items:center;">
+      <button class="ghost" id="scanBtn">Scan a code with your camera</button>
+    </div>
+    <video id="qrVideo" playsinline muted></video>
+    <canvas id="qrCanvas" style="display:none;"></canvas>
     <div class="status-line" id="backupStatus"></div>
   </section>
 
@@ -457,6 +485,8 @@
   </p>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
 <script>
 (function(){
   const $ = (id) => document.getElementById(id);
@@ -479,6 +509,11 @@
   const backupStatus = $('backupStatus');
   const customKeyBtn = $('customKeyBtn');
   const syncHoldingsBtn = $('syncHoldingsBtn');
+  const showQrBtn = $('showQrBtn');
+  const qrOutput = $('qrOutput');
+  const scanBtn = $('scanBtn');
+  const qrVideo = $('qrVideo');
+  const qrCanvas = $('qrCanvas');
 
   let apiKey = '';
   let stocksCache = {};      // id -> {name, acronym, price}
@@ -714,6 +749,20 @@
         }
       }
 
+      let dividendLine = '';
+      if(w && s.benefit && s.benefit.type === 'active' && s.benefit.frequency){
+        const freqDays = s.benefit.frequency;
+        if(w.lastCollected){
+          const nextTime = new Date(w.lastCollected).getTime() + freqDays * 86400000;
+          const daysLeft = Math.ceil((nextTime - Date.now()) / 86400000);
+          if(daysLeft <= 0){
+            dividendLine = `<div class="benefit-line"><span class="met">💰 Payout ready</span> — collect it in-game within 24h or the next one gets pushed back.</div>`;
+          }else{
+            dividendLine = `<div class="benefit-line">Next payout in ${daysLeft} day${daysLeft > 1 ? 's' : ''} (around ${new Date(nextTime).toLocaleDateString()}).</div>`;
+          }
+        }
+      }
+
       return `
         <div class="stock-card ${checked ? 'checked' : ''}" data-id="${s.id}">
           <div class="stock-top">
@@ -725,6 +774,7 @@
           </div>
           ${rangeLine}
           ${benefitLine}
+          ${dividendLine}
           <div class="thresh-panel">
             <div class="field">
               <label>Notify below</label>
@@ -746,7 +796,24 @@
               <label>You own</label>
               <input type="number" step="1" class="owned-input" data-id="${s.id}" value="${owned}" placeholder="shares">
             </div>
-            ${w && w.owned ? `<div class="field" style="display:flex; align-items:flex-end;"><span class="armed-tag" style="border-color:var(--gold-dim); color:var(--gold-dim);">worth $${(w.owned * Number(s.price)).toLocaleString(undefined,{maximumFractionDigits:2})}</span></div>` : ''}
+            <div class="field">
+              <label>Your avg buy price</label>
+              <input type="number" step="0.01" class="avgbuy-input" data-id="${s.id}" value="${w && w.avgBuyPrice ? w.avgBuyPrice : ''}" placeholder="e.g. 740.00">
+            </div>
+            ${s.benefit && s.benefit.type === 'active' ? `
+            <div class="field">
+              <label>Last collected</label>
+              <input type="date" class="lastcollected-input" data-id="${s.id}" value="${w && w.lastCollected ? w.lastCollected : ''}">
+            </div>` : ''}
+            ${w && w.owned ? `<div class="field" style="display:flex; align-items:flex-end; gap:6px; flex-wrap:wrap;">
+              <span class="armed-tag" style="border-color:var(--gold-dim); color:var(--gold-dim);">worth $${(w.owned * Number(s.price)).toLocaleString(undefined,{maximumFractionDigits:2})}</span>
+              ${w.avgBuyPrice ? (() => {
+                const pl = (Number(s.price) - w.avgBuyPrice) * w.owned;
+                const plPct = ((Number(s.price) - w.avgBuyPrice) / w.avgBuyPrice) * 100;
+                const cls = pl >= 0 ? 'up' : 'down';
+                return `<span class="armed-tag" style="border-color:var(--${cls}); color:var(--${cls});">${pl >= 0 ? '+' : ''}$${pl.toLocaleString(undefined,{maximumFractionDigits:2})} (${plPct >= 0 ? '+' : ''}${plPct.toFixed(1)}%)</span>`;
+              })() : ''}
+            </div>` : ''}
             ${tags.length ? `<div class="field" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">${tags.join('')}</div>` : ''}
             ${suggestion}
           </div>
@@ -767,7 +834,7 @@
       });
     });
 
-    stockList.querySelectorAll('.low-input, .high-input, .owned-input, .pct-drop-input, .pct-rise-input').forEach(inp => {
+    stockList.querySelectorAll('.low-input, .high-input, .owned-input, .pct-drop-input, .pct-rise-input, .avgbuy-input, .lastcollected-input').forEach(inp => {
       inp.addEventListener('change', () => {
         const id = inp.dataset.id;
         const w = watches[id];
@@ -783,6 +850,11 @@
         }else if(inp.classList.contains('pct-rise-input')){
           w.pctRisePct = inp.value === '' ? null : parseFloat(inp.value);
           w.pctRiseBase = curPrice; w.armedPctRise = true;
+        }else if(inp.classList.contains('avgbuy-input')){
+          w.avgBuyPrice = inp.value === '' ? null : parseFloat(inp.value);
+        }else if(inp.classList.contains('lastcollected-input')){
+          w.lastCollected = inp.value === '' ? null : inp.value;
+          w.dividendNotified = false;
         }else{
           w.owned = inp.value === '' ? 0 : parseFloat(inp.value);
         }
@@ -805,7 +877,17 @@
       const price = stocksCache[id] ? Number(stocksCache[id].price) : 0;
       return sum + (w.owned * price);
     }, 0);
-    portfolioSummary.textContent = `Portfolio: ${held.length} stock${held.length > 1 ? 's' : ''} held, worth $${total.toLocaleString(undefined,{maximumFractionDigits:2})} at current prices.`;
+    const withCostBasis = held.filter(([id, w]) => w.avgBuyPrice);
+    let plText = '';
+    if(withCostBasis.length){
+      const totalPL = withCostBasis.reduce((sum, [id, w]) => {
+        const price = stocksCache[id] ? Number(stocksCache[id].price) : 0;
+        return sum + ((price - w.avgBuyPrice) * w.owned);
+      }, 0);
+      const sign = totalPL >= 0 ? '+' : '';
+      plText = ` · ${sign}$${totalPL.toLocaleString(undefined,{maximumFractionDigits:2})} unrealized ${totalPL >= 0 ? 'profit' : 'loss'} on ${withCostBasis.length} priced stock${withCostBasis.length > 1 ? 's' : ''}`;
+    }
+    portfolioSummary.textContent = `Portfolio: ${held.length} stock${held.length > 1 ? 's' : ''} held, worth $${total.toLocaleString(undefined,{maximumFractionDigits:2})} at current prices${plText}.`;
   }
 
   function renderSignalsSummary(signals){
@@ -876,10 +958,30 @@
     renderStockList();
   });
 
+  function buildBackupCode(){
+    const payload = { v: 1, watches, budget };
+    return btoa(encodeURIComponent(JSON.stringify(payload)));
+  }
+
+  function loadWatchlistFromCode(raw){
+    try{
+      const payload = JSON.parse(decodeURIComponent(atob(raw.trim())));
+      if(!payload || typeof payload.watches !== 'object'){ throw new Error('bad payload'); }
+      watches = payload.watches;
+      if(typeof payload.budget === 'number'){ budget = payload.budget; budgetInput.value = budget; localStorage.setItem(STORE_BUDGET, String(budget)); }
+      persistWatches();
+      renderStockList();
+      setStatus(backupStatus, 'Watchlist loaded.', 'ok');
+      return true;
+    }catch(e){
+      setStatus(backupStatus, "That code doesn't look right — check it was copied or scanned in full.", 'err');
+      return false;
+    }
+  }
+
   exportBtn.addEventListener('click', async () => {
     if(!Object.keys(watches).length){ setStatus(backupStatus, 'Nothing to back up yet — watch a stock first.', 'err'); return; }
-    const payload = { v: 1, watches, budget };
-    const code = btoa(encodeURIComponent(JSON.stringify(payload)));
+    const code = buildBackupCode();
     try{
       await navigator.clipboard.writeText(code);
       setStatus(backupStatus, 'Code copied to your clipboard.', 'ok');
@@ -889,20 +991,78 @@
     }
   });
 
+  showQrBtn.addEventListener('click', () => {
+    if(!Object.keys(watches).length){ setStatus(backupStatus, 'Nothing to show yet — watch a stock first.', 'err'); return; }
+    const code = buildBackupCode();
+    qrOutput.innerHTML = '';
+    if(code.length > 1800){
+      setStatus(backupStatus, 'Your watchlist has too much detail for a reliable QR code — use "Copy watchlist code" instead.', 'err');
+      return;
+    }
+    if(typeof QRCode === 'undefined'){
+      setStatus(backupStatus, "Couldn't load the QR generator — check your connection and try again.", 'err');
+      return;
+    }
+    new QRCode(qrOutput, { text: code, width: 220, height: 220, colorDark: '#17140f', colorLight: '#ffffff' });
+    setStatus(backupStatus, 'Scan this from another device with "Scan a code with your camera," or any QR scanner, then paste it above.', 'ok');
+  });
+
   importBtn.addEventListener('click', () => {
     const raw = importInput.value.trim();
     if(!raw){ setStatus(backupStatus, 'Paste a code first.', 'err'); return; }
+    if(loadWatchlistFromCode(raw)) importInput.value = '';
+  });
+
+  // ---- QR camera scanning ----
+  let scanStream = null;
+  let scanRAF = null;
+
+  function stopScan(){
+    if(scanRAF) cancelAnimationFrame(scanRAF);
+    scanRAF = null;
+    if(scanStream){ scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+    qrVideo.style.display = 'none';
+    scanBtn.textContent = 'Scan a code with your camera';
+  }
+
+  function scanLoop(){
+    const ctx = qrCanvas.getContext('2d');
+    const tick = () => {
+      if(!scanStream) return;
+      if(qrVideo.readyState === qrVideo.HAVE_ENOUGH_DATA){
+        qrCanvas.width = qrVideo.videoWidth;
+        qrCanvas.height = qrVideo.videoHeight;
+        ctx.drawImage(qrVideo, 0, 0, qrCanvas.width, qrCanvas.height);
+        const imageData = ctx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
+        const result = typeof jsQR === 'function' ? jsQR(imageData.data, imageData.width, imageData.height) : null;
+        if(result && result.data){
+          const code = result.data;
+          stopScan();
+          loadWatchlistFromCode(code);
+          return;
+        }
+      }
+      scanRAF = requestAnimationFrame(tick);
+    };
+    scanRAF = requestAnimationFrame(tick);
+  }
+
+  scanBtn.addEventListener('click', async () => {
+    if(scanStream){ stopScan(); return; }
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      setStatus(backupStatus, 'Camera access is not available in this browser.', 'err');
+      return;
+    }
     try{
-      const payload = JSON.parse(decodeURIComponent(atob(raw)));
-      if(!payload || typeof payload.watches !== 'object'){ throw new Error('bad payload'); }
-      watches = payload.watches;
-      if(typeof payload.budget === 'number'){ budget = payload.budget; budgetInput.value = budget; localStorage.setItem(STORE_BUDGET, String(budget)); }
-      persistWatches();
-      renderStockList();
-      importInput.value = '';
-      setStatus(backupStatus, 'Watchlist loaded.', 'ok');
+      scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      qrVideo.srcObject = scanStream;
+      qrVideo.style.display = 'block';
+      scanBtn.textContent = 'Cancel scan';
+      await qrVideo.play();
+      scanLoop();
     }catch(e){
-      setStatus(backupStatus, "That code doesn't look right — check it was copied in full.", 'err');
+      setStatus(backupStatus, "Could not access the camera — check your browser's permission for this site.", 'err');
+      scanStream = null;
     }
   });
 
@@ -958,6 +1118,14 @@
           if(cur >= target){
             notify(`${w.acronym} rose ${w.pctRisePct}%`, `Now $${cur.toFixed(2)}, up from $${w.pctRiseBase.toFixed(2)}.`);
             w.armedPctRise = false; changed = true;
+          }
+        }
+        const benefit = stocksCache[id] && stocksCache[id].benefit;
+        if(w.lastCollected && benefit && benefit.type === 'active' && benefit.frequency && !w.dividendNotified){
+          const nextTime = new Date(w.lastCollected).getTime() + benefit.frequency * 86400000;
+          if(Date.now() >= nextTime){
+            notify(`${w.acronym} dividend ready`, `Your payout is ready to collect — claim it within 24h to stay on schedule.`);
+            w.dividendNotified = true; changed = true;
           }
         }
       });
