@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Torn Stock Alerts</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#17140f">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stock Alerts">
+<style>
+  :root{
+    --bg:#17140f;
+    --panel:#221e17;
+    --panel-2:#2b261d;
+    --edge:#3a3324;
+    --gold:#c9a227;
+    --gold-dim:#8a7124;
+    --bone:#e9e2d0;
+    --bone-dim:#a89d84;
+    --up:#4f9c6e;
+    --down:#b8503f;
+    --mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --slab: 'Roboto Slab', Georgia, serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--bone);
+    font-family:var(--slab);
+    min-height:100vh;
+  }
+  @font-face{ /* fallback stack only, no external font fetch needed for function */ }
+
+  .wrap{max-width:760px;margin:0 auto;padding:0 0 60px;}
+
+  /* ---- Ticker tape header ---- */
+  .tape-outer{
+    background:#0e0c09;
+    border-bottom:2px solid var(--gold-dim);
+    overflow:hidden;
+    white-space:nowrap;
+    position:relative;
+  }
+  .tape-track{
+    display:inline-block;
+    padding:10px 0;
+    font-family:var(--mono);
+    font-size:13px;
+    letter-spacing:0.02em;
+    animation:scroll 28s linear infinite;
+    will-change:transform;
+  }
+  .tape-track span{margin:0 22px; color:var(--bone-dim);}
+  .tape-track span.up{color:var(--up);}
+  .tape-track span.down{color:var(--down);}
+  @keyframes scroll{
+    from{transform:translateX(0);}
+    to{transform:translateX(-50%);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .tape-track{animation:none;}
+  }
+
+  header.title-block{
+    padding:34px 20px 18px;
+    border-bottom:1px solid var(--edge);
+  }
+  header.title-block h1{
+    font-family:var(--slab);
+    font-weight:700;
+    font-size:28px;
+    margin:0 0 6px;
+    color:var(--gold);
+    letter-spacing:0.01em;
+  }
+  header.title-block p{
+    margin:0;
+    color:var(--bone-dim);
+    font-size:14px;
+    line-height:1.5;
+    max-width:56ch;
+  }
+
+  section{padding:22px 20px; border-bottom:1px solid var(--edge);}
+  section h2{
+    font-family:var(--slab);
+    font-size:15px;
+    font-weight:700;
+    color:var(--bone);
+    margin:0 0 14px;
+  }
+
+  .help{
+    display:inline-block;
+    margin-left:6px;
+    vertical-align:middle;
+  }
+  .help summary{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:17px;
+    height:17px;
+    border-radius:50%;
+    border:1px solid var(--gold-dim);
+    color:var(--gold-dim);
+    font-family:var(--mono);
+    font-size:11px;
+    cursor:pointer;
+    list-style:none;
+    user-select:none;
+  }
+  .help summary::-webkit-details-marker{display:none;}
+  .help summary:hover{background:var(--gold-dim); color:#141109;}
+  .help[open] summary{background:var(--gold); border-color:var(--gold); color:#141109;}
+  .help .help-body{
+    margin-top:8px;
+    padding:10px 12px;
+    background:var(--panel-2);
+    border:1px solid var(--edge);
+    border-radius:4px;
+    font-family:var(--slab);
+    font-size:12.5px;
+    color:var(--bone-dim);
+    line-height:1.5;
+    max-width:46ch;
+  }
+  h2 .help{margin-left:8px;}
+
+  label{display:block; font-size:12.5px; color:var(--bone-dim); margin-bottom:5px;}
+  input, select{
+    width:100%;
+    background:var(--panel);
+    border:1px solid var(--edge);
+    color:var(--bone);
+    font-family:var(--mono);
+    font-size:14px;
+    padding:9px 10px;
+    border-radius:3px;
+    outline:none;
+  }
+  input:focus, select:focus{border-color:var(--gold-dim);}
+  input::placeholder{color:#5a5340;}
+
+  .row{display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;}
+  .row > div{flex:1; min-width:150px;}
+
+  @media (max-width:480px){
+    .row{flex-direction:column;}
+    .row > div{width:100%; min-width:0;}
+    header.title-block h1{font-size:24px;}
+    .stock-top{flex-wrap:wrap;}
+    .stock-top .price{margin-left:auto;}
+  }
+
+  button{
+    font-family:var(--slab);
+    font-weight:700;
+    font-size:13.5px;
+    border-radius:3px;
+    border:1px solid var(--gold-dim);
+    background:transparent;
+    color:var(--gold);
+    padding:9px 16px;
+    cursor:pointer;
+    transition:background 0.15s ease, color 0.15s ease;
+  }
+  button:hover{background:var(--gold-dim); color:#141109;}
+  button.primary{background:var(--gold); color:#141109; border-color:var(--gold);}
+  button.primary:hover{background:#dcb436;}
+  button.ghost{border-color:var(--edge); color:var(--bone-dim);}
+  button.ghost:hover{background:var(--panel-2); color:var(--bone);}
+  button.small{padding:5px 10px; font-size:12px;}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+
+  .status-line{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--bone-dim);
+    margin-top:10px;
+    min-height:16px;
+  }
+  .status-line.err{color:var(--down);}
+  .status-line.ok{color:var(--up);}
+
+  .stock-search{margin-bottom:14px;}
+
+  .stock-card{
+    background:var(--panel);
+    border:1px solid var(--edge);
+    border-radius:4px;
+    padding:12px 16px;
+    margin-bottom:8px;
+    transition:border-color 0.15s ease;
+  }
+  .stock-card.checked{border-color:var(--gold-dim);}
+  .stock-top{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .stock-top input[type=checkbox]{
+    width:18px; height:18px; flex:none;
+    accent-color:var(--gold);
+    cursor:pointer;
+  }
+  .stock-top .stock-id-block{flex:1; min-width:0;}
+  .stock-top .name{
+    font-family:var(--slab);
+    font-weight:700;
+    font-size:14.5px;
+    color:var(--bone);
+  }
+  .stock-top .acr{color:var(--gold-dim); font-family:var(--mono); font-size:11.5px; margin-left:6px;}
+  .stock-top .price{
+    font-family:var(--mono);
+    font-size:16px;
+    color:var(--bone);
+    white-space:nowrap;
+  }
+  .thresh-panel{
+    display:none;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid var(--edge);
+    align-items:flex-end;
+  }
+  .stock-card.checked .thresh-panel{display:flex;}
+  .thresh-panel .field{flex:1; min-width:130px;}
+  .thresh-panel label{margin-bottom:4px;}
+  .thresh-panel input{width:100%;}
+  .armed-tag{font-family:var(--mono); font-size:11px; padding:2px 7px; border-radius:10px; border:1px solid var(--edge); color:var(--bone-dim); white-space:nowrap;}
+  .armed-tag.hit-high{border-color:var(--up); color:var(--up);}
+  .armed-tag.hit-low{border-color:var(--down); color:var(--down);}
+
+  .range-line{
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--bone-dim);
+    margin-top:4px;
+    padding-left:30px;
+  }
+  .signal-tag{
+    font-family:var(--mono);
+    font-size:11px;
+    padding:2px 7px;
+    border-radius:10px;
+    border:1px solid var(--edge);
+    white-space:nowrap;
+  }
+  .signal-tag.buy{border-color:var(--up); color:var(--up);}
+  .signal-tag.high{border-color:var(--down); color:var(--down);}
+  .signal-tag.mid{color:var(--bone-dim);}
+  .suggestion-line{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--bone);
+    margin-top:8px;
+    padding-top:8px;
+    border-top:1px solid var(--edge);
+    width:100%;
+  }
+  .suggestion-line .amt{color:var(--gold);}
+
+  .empty{
+    color:var(--bone-dim);
+    font-size:13.5px;
+    font-style:italic;
+    padding:10px 0;
+  }
+
+  .footnote{
+    padding:18px 20px 0;
+    font-size:12px;
+    color:#6b6350;
+    line-height:1.6;
+  }
+  .footnote a{color:var(--gold-dim);}
+</style>
+</head>
+<body>
+
+<div class="tape-outer">
+  <div class="tape-track" id="tapeTrack">
+    <span>Connect your API key to start the tape&nbsp;&nbsp;·&nbsp;&nbsp;</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="title-block">
+    <h1>Torn Stock Alerts</h1>
+    <p>Watch any Torn stock and get a notification the moment it crosses a price you set — either direction. Keep this tab open; it checks prices in the background.</p>
+    <button class="ghost" id="installBtn" style="margin-top:14px; display:none;">Install as app</button>
+  </header>
+
+  <section>
+    <h2>1. Connect your API key
+      <details class="help">
+        <summary>?</summary>
+        <div class="help-body">An API key lets this app read live data from Torn on your behalf. A "Public Only" key is all you need for prices and alerts. If you also want your owned shares filled in automatically (section 3), the key needs two specific selections instead — use the "Build a key for this app" button below rather than a broader Minimal/Limited/Full key, so you're only granting what's actually used.</div>
+      </details>
+    </h2>
+    <div class="row">
+      <div>
+        <label for="apiKey">Torn API key</label>
+        <input id="apiKey" type="password" placeholder="Paste your key" autocomplete="off">
+      </div>
+    </div>
+    <div class="row" style="gap:10px;">
+      <button class="primary" id="saveKeyBtn">Save key</button>
+      <button class="ghost" id="notifBtn">Enable notifications</button>
+      <details class="help">
+        <summary>?</summary>
+        <div class="help-body">Turns on your browser's built-in notification pop-ups. Your browser will ask you to allow this once — say yes so alerts can actually show up.</div>
+      </details>
+    </div>
+    <div class="row" style="gap:10px;">
+      <button class="ghost" id="customKeyBtn">Build a key for this app</button>
+      <details class="help">
+        <summary>?</summary>
+        <div class="help-body">Opens Torn's key creation page with exactly two selections pre-checked: general stock prices, and your own stock holdings — nothing else. Just give it a name and save, then paste the new key above. Skip this if you're happy entering "shares owned" by hand.</div>
+      </details>
+    </div>
+    <div class="status-line" id="keyStatus">A "Public Only" key covers prices and alerts. Stored only on this device, never sent anywhere but Torn.</div>
+  </section>
+
+  <section>
+    <h2>2. Choose which stocks to watch
+      <details class="help">
+        <summary>?</summary>
+        <div class="help-body">
+          Check a stock to start watching it. "Notify below/above" are the prices that trigger an alert — leave either blank to skip that direction.<br><br>
+          "Range so far" is the lowest and highest price this app has seen since you opened it (Torn's basic API doesn't hand over full history). The tag next to it — near session low / mid-range / near session high — just shows where today's price sits in that range.<br><br>
+          If a stock is near its low and you've entered a budget, it'll suggest how many shares that budget could buy. This is a simple rule of thumb, not a prediction — prices can keep moving either way.
+        </div>
+      </details>
+    </h2>
+    <div class="row" style="align-items:flex-end;">
+      <div>
+        <label for="stockFilter">Filter by name or ticker</label>
+        <input id="stockFilter" type="text" placeholder="e.g. sym or tcm">
+      </div>
+      <div style="flex:none; width:170px;">
+        <label for="budgetInput">Cash to invest
+          <details class="help">
+            <summary>?</summary>
+            <div class="help-body">The amount of in-game money you have available. Used only to suggest how many shares you could afford for stocks flagged as near their session low — nothing is spent automatically.</div>
+          </details>
+        </label>
+        <input id="budgetInput" type="number" step="1" placeholder="e.g. 5000000">
+      </div>
+      <div style="flex:none;">
+        <label for="pollInterval">Check every
+          <details class="help">
+            <summary>?</summary>
+            <div class="help-body">How often the app re-checks prices while this tab is open. Shorter intervals catch price moves sooner but use more of your API key's request allowance (Torn allows 100 requests per minute).</div>
+          </details>
+        </label>
+        <select id="pollInterval">
+          <option value="60">1 minute</option>
+          <option value="120" selected>2 minutes</option>
+          <option value="300">5 minutes</option>
+          <option value="600">10 minutes</option>
+        </select>
+      </div>
+      <div style="flex:none;">
+        <button class="ghost" id="checkNowBtn">Check now</button>
+      </div>
+    </div>
+    <div class="row" style="gap:10px; align-items:center;">
+      <button class="ghost" id="syncHoldingsBtn">Sync my holdings</button>
+      <details class="help">
+        <summary>?</summary>
+        <div class="help-body">Fetches how many shares you actually own straight from Torn and fills in "You own" for you. Needs a key with the "user → stocks" selection — use "Build a key for this app" in section 1 if you haven't already. If the key doesn't have that access, this will just tell you so; nothing breaks.</div>
+      </details>
+    </div>
+    <div id="portfolioSummary" class="status-line" style="margin-bottom:10px;"></div>
+    <div id="stockList"><div class="empty">Connect your API key above to load the stock list.</div></div>
+    <div class="status-line" id="pollStatus"></div>
+  </section>
+
+  <section>
+    <h2>3. Back up your watchlist
+      <details class="help">
+        <summary>?</summary>
+        <div class="help-body">Your watchlist lives only in this browser. Copy a code here to move it to another device or browser — paste it there and load it.</div>
+      </details>
+    </h2>
+    <div class="row" style="gap:10px;">
+      <button class="ghost" id="exportBtn">Copy watchlist code</button>
+    </div>
+    <div class="row" style="gap:10px; align-items:flex-end;">
+      <div>
+        <label for="importInput">Paste a code to load</label>
+        <input id="importInput" type="text" placeholder="Paste code here">
+      </div>
+      <div style="flex:none;">
+        <button class="primary" id="importBtn">Load</button>
+      </div>
+    </div>
+    <div class="status-line" id="backupStatus"></div>
+  </section>
+
+  <p class="footnote">
+    Prices come straight from the official Torn API using your key, from your browser — nothing is sent anywhere else.
+    If you use "Sync my holdings," it makes one extra call to Torn's <code>user → stocks</code> selection to read your own share counts — this needs a key with that selection enabled, and is entirely optional; you can always type "You own" by hand instead.
+    High/low shows the range observed since you started tracking each stock here, not its full history.
+    Buy suggestions are a simple heuristic — where the price sits in the range you've seen — not financial advice; the game's stock market can move against any pattern.
+    Alerts fire once per crossing, then re-arm once the price moves back between your thresholds. Closing this tab pauses checking.
+  </p>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const keyInput = $('apiKey');
+  const keyStatus = $('keyStatus');
+  const notifBtn = $('notifBtn');
+  const stockFilter = $('stockFilter');
+  const stockList = $('stockList');
+  const portfolioSummary = $('portfolioSummary');
+  const budgetInput = $('budgetInput');
+  const pollStatus = $('pollStatus');
+  const pollIntervalSel = $('pollInterval');
+  const checkNowBtn = $('checkNowBtn');
+  const tapeTrack = $('tapeTrack');
+  const exportBtn = $('exportBtn');
+  const importBtn = $('importBtn');
+  const importInput = $('importInput');
+  const backupStatus = $('backupStatus');
+  const customKeyBtn = $('customKeyBtn');
+  const syncHoldingsBtn = $('syncHoldingsBtn');
+
+  let apiKey = '';
+  let stocksCache = {};      // id -> {name, acronym, price}
+  let watches = {};          // id -> {name, acronym, low, high, armedHigh, armedLow}
+  let ranges = {};           // id -> {high, low}  (observed since tracking started)
+  let budget = null;
+  let pollTimer = null;
+
+  const STORE_KEY = 'torn-stock-key';
+  const STORE_WATCHES = 'torn-stock-watches';
+  const STORE_RANGES = 'torn-stock-ranges';
+  const STORE_BUDGET = 'torn-stock-budget';
+
+  function setStatus(el, msg, type){
+    el.textContent = msg || '';
+    el.className = 'status-line' + (type ? ' ' + type : '');
+  }
+
+  async function loadPersisted(){
+    try{
+      const k = localStorage.getItem(STORE_KEY);
+      if(k){ apiKey = k; keyInput.value = apiKey; }
+    }catch(e){ /* storage unavailable */ }
+    try{
+      const w = localStorage.getItem(STORE_WATCHES);
+      if(w){ watches = JSON.parse(w); }
+    }catch(e){ /* no watches saved yet */ }
+    try{
+      const r = localStorage.getItem(STORE_RANGES);
+      if(r){ ranges = JSON.parse(r); }
+    }catch(e){ /* no ranges saved yet */ }
+    try{
+      const b = localStorage.getItem(STORE_BUDGET);
+      if(b){ budget = parseFloat(b); budgetInput.value = budget; }
+    }catch(e){ /* no budget saved yet */ }
+    if(apiKey){
+      setStatus(keyStatus, 'Key loaded from this device.', 'ok');
+      await refreshStocks(true);
+    }
+  }
+
+  function persistWatches(){
+    try{ localStorage.setItem(STORE_WATCHES, JSON.stringify(watches)); }
+    catch(e){ console.error('Could not save watchlist', e); }
+  }
+
+  function persistRanges(){
+    try{ localStorage.setItem(STORE_RANGES, JSON.stringify(ranges)); }
+    catch(e){ console.error('Could not save ranges', e); }
+  }
+
+  budgetInput.addEventListener('change', () => {
+    budget = budgetInput.value === '' ? null : parseFloat(budgetInput.value);
+    try{ localStorage.setItem(STORE_BUDGET, budget === null ? '' : String(budget)); }
+    catch(e){ console.error(e); }
+    renderStockList();
+  });
+
+  $('saveKeyBtn').addEventListener('click', async () => {
+    apiKey = keyInput.value.trim();
+    if(!apiKey){ setStatus(keyStatus, 'Enter a key first.', 'err'); return; }
+    try{ localStorage.setItem(STORE_KEY, apiKey); }
+    catch(e){ console.error(e); }
+    setStatus(keyStatus, 'Checking key…');
+    await refreshStocks(true);
+  });
+
+  customKeyBtn.addEventListener('click', () => {
+    const url = 'https://www.torn.com/preferences.php#tab=api?step=addNewKey&title=' + encodeURIComponent('Stock Alerts') + '&torn=stocks&user=stocks';
+    window.open(url, '_blank');
+  });
+
+  notifBtn.addEventListener('click', async () => {
+    if(!('Notification' in window)){
+      setStatus(pollStatus, 'This browser does not support notifications.', 'err');
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    if(perm === 'granted'){
+      notifBtn.textContent = 'Notifications on';
+      notifBtn.disabled = true;
+      new Notification('Torn Stock Alerts', { body: "You'll be notified here when a stock crosses your price." });
+    }else{
+      setStatus(pollStatus, 'Notifications were blocked — enable them in your browser settings to get alerts.', 'err');
+    }
+  });
+
+  function updateRanges(){
+    Object.entries(stocksCache).forEach(([id, s]) => {
+      const p = Number(s.price);
+      if(!ranges[id]){ ranges[id] = { high: p, low: p }; }
+      else{
+        if(p > ranges[id].high) ranges[id].high = p;
+        if(p < ranges[id].low) ranges[id].low = p;
+      }
+    });
+  }
+
+  async function refreshStocks(announce){
+    if(!apiKey) return;
+    try{
+      const res = await fetch(`https://api.torn.com/torn/?selections=stocks&key=${encodeURIComponent(apiKey)}`);
+      const data = await res.json();
+      if(data.error){
+        setStatus(keyStatus, `Torn API error: ${data.error.error}`, 'err');
+        return;
+      }
+      stocksCache = {};
+      Object.values(data.stocks).forEach(s => {
+        stocksCache[s.stock_id] = { name: s.name, acronym: s.acronym, price: s.current_price };
+      });
+      if(announce) setStatus(keyStatus, `Key works — ${Object.keys(stocksCache).length} stocks loaded.`, 'ok');
+      updateRanges();
+      persistRanges();
+      updateTape();
+      renderStockList();
+      startPolling();
+    }catch(e){
+      setStatus(keyStatus, 'Could not reach the Torn API. Check your connection.', 'err');
+    }
+  }
+
+  function updateTape(){
+    const items = Object.values(stocksCache);
+    if(!items.length) return;
+    const half = items.map(s => {
+      const cls = s.change === undefined ? '' : '';
+      return `<span>${s.acronym} $${Number(s.price).toFixed(2)}</span>`;
+    }).join('');
+    tapeTrack.innerHTML = half + half; // duplicate for seamless loop
+  }
+
+  function renderStockList(){
+    const term = stockFilter.value.trim().toLowerCase();
+    const all = Object.entries(stocksCache)
+      .map(([id, s]) => ({ id, ...s }))
+      .filter(s => !term || s.name.toLowerCase().includes(term) || s.acronym.toLowerCase().includes(term))
+      .sort((a,b) => a.name.localeCompare(b.name));
+
+    if(!all.length){
+      stockList.innerHTML = `<div class="empty">${Object.keys(stocksCache).length ? 'No stocks match that filter.' : 'Connect your API key above to load the stock list.'}</div>`;
+      return;
+    }
+
+    stockList.innerHTML = all.map(s => {
+      const w = watches[s.id];
+      const checked = !!w;
+      const low = w && w.low !== null && w.low !== undefined ? w.low : '';
+      const high = w && w.high !== null && w.high !== undefined ? w.high : '';
+      const owned = w && w.owned ? w.owned : '';
+      const tags = [];
+      if(w){
+        if(w.high !== null) tags.push(`<span class="armed-tag ${w.armedHigh ? '' : 'hit-high'}">${w.armedHigh ? 'watching above ' + w.high : 'alerted · above ' + w.high}</span>`);
+        if(w.low !== null) tags.push(`<span class="armed-tag ${w.armedLow ? '' : 'hit-low'}">${w.armedLow ? 'watching below ' + w.low : 'alerted · below ' + w.low}</span>`);
+      }
+
+      const r = ranges[s.id];
+      let rangeLine = '';
+      let suggestion = '';
+      if(r){
+        const price = Number(s.price);
+        const span = r.high - r.low;
+        const pct = span > 0 ? (price - r.low) / span : 0.5;
+        let sig = { cls:'mid', label:'mid-range' };
+        if(pct <= 0.33) sig = { cls:'buy', label:'near session low' };
+        else if(pct >= 0.66) sig = { cls:'high', label:'near session high' };
+
+        rangeLine = `<div class="range-line">Range so far: $${r.low.toFixed(2)} – $${r.high.toFixed(2)} &nbsp;·&nbsp; <span class="signal-tag ${sig.cls}">${sig.label}</span></div>`;
+
+        if(checked && sig.cls === 'buy' && budget && budget > 0){
+          const shares = Math.floor(budget / price);
+          if(shares > 0){
+            suggestion = `<div class="suggestion-line">Price is low in its recent range. At your $${budget.toLocaleString()} budget, that's <span class="amt">${shares.toLocaleString()} shares</span> (~$${(shares*price).toLocaleString(undefined,{maximumFractionDigits:2})}).</div>`;
+          }
+        }else if(checked && sig.cls === 'high'){
+          suggestion = `<div class="suggestion-line">Price is high in its recent range — this isn't a signal to buy right now.</div>`;
+        }
+      }
+
+      return `
+        <div class="stock-card ${checked ? 'checked' : ''}" data-id="${s.id}">
+          <div class="stock-top">
+            <input type="checkbox" class="watch-toggle" data-id="${s.id}" ${checked ? 'checked' : ''}>
+            <div class="stock-id-block">
+              <span class="name">${s.name}</span><span class="acr">${s.acronym}</span>
+            </div>
+            <div class="price">$${Number(s.price).toFixed(2)}</div>
+          </div>
+          ${rangeLine}
+          <div class="thresh-panel">
+            <div class="field">
+              <label>Notify below</label>
+              <input type="number" step="0.01" class="low-input" data-id="${s.id}" value="${low}" placeholder="e.g. 720.00">
+            </div>
+            <div class="field">
+              <label>Notify above</label>
+              <input type="number" step="0.01" class="high-input" data-id="${s.id}" value="${high}" placeholder="e.g. 810.00">
+            </div>
+            <div class="field">
+              <label>You own</label>
+              <input type="number" step="1" class="owned-input" data-id="${s.id}" value="${owned}" placeholder="shares">
+            </div>
+            ${w && w.owned ? `<div class="field" style="display:flex; align-items:flex-end;"><span class="armed-tag" style="border-color:var(--gold-dim); color:var(--gold-dim);">worth $${(w.owned * Number(s.price)).toLocaleString(undefined,{maximumFractionDigits:2})}</span></div>` : ''}
+            ${tags.length ? `<div class="field" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">${tags.join('')}</div>` : ''}
+            ${suggestion}
+          </div>
+        </div>`;
+    }).join('');
+
+    stockList.querySelectorAll('.watch-toggle').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const id = cb.dataset.id;
+        if(cb.checked){
+          const info = stocksCache[id];
+          watches[id] = { name: info.name, acronym: info.acronym, low: null, high: null, owned: 0, armedLow: true, armedHigh: true };
+        }else{
+          delete watches[id];
+        }
+        persistWatches();
+        renderStockList();
+      });
+    });
+
+    stockList.querySelectorAll('.low-input, .high-input, .owned-input').forEach(inp => {
+      inp.addEventListener('change', () => {
+        const id = inp.dataset.id;
+        const w = watches[id];
+        if(!w) return;
+        if(inp.classList.contains('low-input')){
+          w.low = inp.value === '' ? null : parseFloat(inp.value); w.armedLow = true;
+        }else if(inp.classList.contains('high-input')){
+          w.high = inp.value === '' ? null : parseFloat(inp.value); w.armedHigh = true;
+        }else{
+          w.owned = inp.value === '' ? 0 : parseFloat(inp.value);
+        }
+        persistWatches();
+        renderStockList();
+      });
+    });
+
+    renderPortfolioSummary();
+  }
+
+  function renderPortfolioSummary(){
+    const held = Object.entries(watches).filter(([id, w]) => w.owned > 0);
+    if(!held.length){
+      portfolioSummary.textContent = '';
+      return;
+    }
+    const total = held.reduce((sum, [id, w]) => {
+      const price = stocksCache[id] ? Number(stocksCache[id].price) : 0;
+      return sum + (w.owned * price);
+    }, 0);
+    portfolioSummary.textContent = `Portfolio: ${held.length} stock${held.length > 1 ? 's' : ''} held, worth $${total.toLocaleString(undefined,{maximumFractionDigits:2})} at current prices.`;
+  }
+
+  async function syncHoldings(){
+    if(!apiKey){ setStatus(pollStatus, 'Connect an API key first.', 'err'); return; }
+    setStatus(pollStatus, 'Syncing your holdings…');
+    try{
+      const res = await fetch(`https://api.torn.com/user/?selections=stocks&key=${encodeURIComponent(apiKey)}`);
+      const data = await res.json();
+      if(data.error){
+        setStatus(pollStatus, `Couldn't sync holdings: ${data.error.error}. Your key may need the "user → stocks" selection — see "Build a key for this app" above.`, 'err');
+        return;
+      }
+      const holdings = data.stocks || {};
+      let count = 0;
+      Object.entries(holdings).forEach(([id, entry]) => {
+        // Torn's shape for this selection can vary; check the common fields defensively.
+        let shares = 0;
+        if(typeof entry.total_shares === 'number') shares = entry.total_shares;
+        else if(entry.transactions && typeof entry.transactions === 'object'){
+          shares = Object.values(entry.transactions).reduce((s, t) => s + (Number(t.shares) || 0), 0);
+        }else if(typeof entry.shares === 'number') shares = entry.shares;
+
+        if(shares > 0){
+          count++;
+          if(watches[id]){
+            watches[id].owned = shares;
+          }else if(stocksCache[id]){
+            const info = stocksCache[id];
+            watches[id] = { name: info.name, acronym: info.acronym, low: null, high: null, owned: shares, armedLow: true, armedHigh: true };
+          }
+        }
+      });
+      if(count === 0){
+        setStatus(pollStatus, 'Synced — Torn reports no shares currently owned.', 'ok');
+      }else{
+        persistWatches();
+        renderStockList();
+        setStatus(pollStatus, `Synced holdings for ${count} stock${count > 1 ? 's' : ''}. Double-check the numbers look right.`, 'ok');
+      }
+    }catch(e){
+      setStatus(pollStatus, 'Could not reach the Torn API to sync holdings.', 'err');
+    }
+  }
+  syncHoldingsBtn.addEventListener('click', syncHoldings);
+
+  stockFilter.addEventListener('input', renderStockList);
+
+  exportBtn.addEventListener('click', async () => {
+    if(!Object.keys(watches).length){ setStatus(backupStatus, 'Nothing to back up yet — watch a stock first.', 'err'); return; }
+    const payload = { v: 1, watches, budget };
+    const code = btoa(encodeURIComponent(JSON.stringify(payload)));
+    try{
+      await navigator.clipboard.writeText(code);
+      setStatus(backupStatus, 'Code copied to your clipboard.', 'ok');
+    }catch(e){
+      importInput.value = code;
+      setStatus(backupStatus, "Couldn't auto-copy — the code is in the box below, copy it manually.", 'err');
+    }
+  });
+
+  importBtn.addEventListener('click', () => {
+    const raw = importInput.value.trim();
+    if(!raw){ setStatus(backupStatus, 'Paste a code first.', 'err'); return; }
+    try{
+      const payload = JSON.parse(decodeURIComponent(atob(raw)));
+      if(!payload || typeof payload.watches !== 'object'){ throw new Error('bad payload'); }
+      watches = payload.watches;
+      if(typeof payload.budget === 'number'){ budget = payload.budget; budgetInput.value = budget; localStorage.setItem(STORE_BUDGET, String(budget)); }
+      persistWatches();
+      renderStockList();
+      importInput.value = '';
+      setStatus(backupStatus, 'Watchlist loaded.', 'ok');
+    }catch(e){
+      setStatus(backupStatus, "That code doesn't look right — check it was copied in full.", 'err');
+    }
+  });
+
+  function notify(title, body){
+    if('Notification' in window && Notification.permission === 'granted'){
+      new Notification(title, { body });
+    }
+    setStatus(pollStatus, `${title} — ${body}`, 'ok');
+  }
+
+  async function checkPrices(){
+    if(!apiKey){ return; }
+    try{
+      const res = await fetch(`https://api.torn.com/torn/?selections=stocks&key=${encodeURIComponent(apiKey)}`);
+      const data = await res.json();
+      if(data.error){ setStatus(pollStatus, `Torn API error: ${data.error.error}`, 'err'); return; }
+      Object.values(data.stocks).forEach(s => {
+        stocksCache[s.stock_id] = { name: s.name, acronym: s.acronym, price: s.current_price };
+      });
+      updateRanges();
+      persistRanges();
+      updateTape();
+
+      let changed = false;
+      Object.entries(watches).forEach(([id, w]) => {
+        const cur = stocksCache[id] ? Number(stocksCache[id].price) : null;
+        if(cur === null) return;
+        if(w.high !== null){
+          if(cur >= w.high && w.armedHigh){
+            notify(`${w.acronym} hit your high`, `Now $${cur.toFixed(2)}, at or above $${w.high}.`);
+            w.armedHigh = false; changed = true;
+          }else if(cur < w.high && !w.armedHigh){
+            w.armedHigh = true; changed = true;
+          }
+        }
+        if(w.low !== null){
+          if(cur <= w.low && w.armedLow){
+            notify(`${w.acronym} hit your low`, `Now $${cur.toFixed(2)}, at or below $${w.low}.`);
+            w.armedLow = false; changed = true;
+          }else if(cur > w.low && !w.armedLow){
+            w.armedLow = true; changed = true;
+          }
+        }
+      });
+      if(changed) persistWatches();
+      renderStockList();
+      setStatus(pollStatus, `Last checked ${new Date().toLocaleTimeString()}.`);
+    }catch(e){
+      setStatus(pollStatus, 'Price check failed — will retry.', 'err');
+    }
+  }
+
+  function startPolling(){
+    if(pollTimer) clearInterval(pollTimer);
+    const seconds = parseInt(pollIntervalSel.value, 10);
+    pollTimer = setInterval(checkPrices, seconds * 1000);
+  }
+  pollIntervalSel.addEventListener('change', startPolling);
+  checkNowBtn.addEventListener('click', checkPrices);
+
+  loadPersisted();
+
+  // ---- PWA: service worker + install prompt ----
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => { /* offline caching unavailable, app still works online */ });
+    });
+  }
+
+  let deferredInstallPrompt = null;
+  const installBtn = $('installBtn');
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    installBtn.style.display = 'inline-block';
+  });
+  installBtn.addEventListener('click', async () => {
+    if(!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    installBtn.style.display = 'none';
+  });
+  window.addEventListener('appinstalled', () => {
+    installBtn.style.display = 'none';
+  });
+})();
+</script>
+
+</body>
+</html>
