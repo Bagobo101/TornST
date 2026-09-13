@@ -287,9 +287,15 @@
     margin:4px 0 14px;
   }
   .qr-output:empty{margin:0;}
-  .qr-output img, .qr-output canvas{
+  .qr-output-inner{
+    background:#ffffff;
+    padding:16px;
     border-radius:6px;
-    border:6px solid var(--panel-2);
+    display:inline-block;
+    line-height:0;
+  }
+  .qr-output img, .qr-output canvas{
+    display:block;
     background:#fff;
   }
   #qrVideo{
@@ -958,17 +964,63 @@
     renderStockList();
   });
 
+  function compactWatches(){
+    const out = {};
+    Object.entries(watches).forEach(([id, w]) => {
+      const c = {};
+      if(w.low !== null && w.low !== undefined) c.l = w.low;
+      if(w.high !== null && w.high !== undefined) c.h = w.high;
+      if(w.pctDropPct){ c.dp = w.pctDropPct; c.db = w.pctDropBase; }
+      if(w.pctRisePct){ c.rp = w.pctRisePct; c.rb = w.pctRiseBase; }
+      if(w.owned) c.o = w.owned;
+      if(w.avgBuyPrice) c.ab = w.avgBuyPrice;
+      if(w.lastCollected) c.lc = w.lastCollected;
+      out[id] = c;
+    });
+    return out;
+  }
+
+  function expandWatches(compact){
+    const out = {};
+    Object.entries(compact).forEach(([id, c]) => {
+      const info = stocksCache[id] || {};
+      out[id] = {
+        name: info.name || `Stock ${id}`,
+        acronym: info.acronym || '',
+        low: c.l !== undefined ? c.l : null,
+        high: c.h !== undefined ? c.h : null,
+        pctDropPct: c.dp || null,
+        pctDropBase: c.db || null,
+        pctRisePct: c.rp || null,
+        pctRiseBase: c.rb || null,
+        owned: c.o || 0,
+        avgBuyPrice: c.ab || null,
+        lastCollected: c.lc || null,
+        armedLow: true, armedHigh: true, armedPctDrop: true, armedPctRise: true, dividendNotified: false
+      };
+    });
+    return out;
+  }
+
   function buildBackupCode(){
-    const payload = { v: 1, watches, budget };
+    const payload = { v: 2, w: compactWatches(), b: budget };
     return btoa(encodeURIComponent(JSON.stringify(payload)));
   }
 
   function loadWatchlistFromCode(raw){
     try{
       const payload = JSON.parse(decodeURIComponent(atob(raw.trim())));
-      if(!payload || typeof payload.watches !== 'object'){ throw new Error('bad payload'); }
-      watches = payload.watches;
-      if(typeof payload.budget === 'number'){ budget = payload.budget; budgetInput.value = budget; localStorage.setItem(STORE_BUDGET, String(budget)); }
+      if(!payload) throw new Error('bad payload');
+      if(payload.v === 2 && payload.w){
+        watches = expandWatches(payload.w);
+        if(typeof payload.b === 'number'){ budget = payload.b; budgetInput.value = budget; localStorage.setItem(STORE_BUDGET, String(budget)); }
+      }else if(payload.watches){
+        // older, uncompacted code format
+        watches = payload.watches;
+        if(typeof payload.budget === 'number'){ budget = payload.budget; budgetInput.value = budget; localStorage.setItem(STORE_BUDGET, String(budget)); }
+      }else{
+        throw new Error('bad payload');
+      }
       persistWatches();
       renderStockList();
       setStatus(backupStatus, 'Watchlist loaded.', 'ok');
@@ -995,7 +1047,7 @@
     if(!Object.keys(watches).length){ setStatus(backupStatus, 'Nothing to show yet — watch a stock first.', 'err'); return; }
     const code = buildBackupCode();
     qrOutput.innerHTML = '';
-    if(code.length > 1800){
+    if(code.length > 1200){
       setStatus(backupStatus, 'Your watchlist has too much detail for a reliable QR code — use "Copy watchlist code" instead.', 'err');
       return;
     }
@@ -1003,8 +1055,18 @@
       setStatus(backupStatus, "Couldn't load the QR generator — check your connection and try again.", 'err');
       return;
     }
-    new QRCode(qrOutput, { text: code, width: 220, height: 220, colorDark: '#17140f', colorLight: '#ffffff' });
-    setStatus(backupStatus, 'Scan this from another device with "Scan a code with your camera," or any QR scanner, then paste it above.', 'ok');
+    const inner = document.createElement('div');
+    inner.className = 'qr-output-inner';
+    qrOutput.appendChild(inner);
+    new QRCode(inner, {
+      text: code,
+      width: 260,
+      height: 260,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.L
+    });
+    setStatus(backupStatus, 'Scan this from another device with "Scan a code with your camera," or any QR scanner, then paste it above. Keep it well-lit and hold steady.', 'ok');
   });
 
   importBtn.addEventListener('click', () => {
