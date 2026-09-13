@@ -661,7 +661,7 @@
       renderStockList();
       startPolling();
     }catch(e){
-      setStatus(keyStatus, 'Could not reach the Torn API. Check your connection.', 'err');
+      setStatus(keyStatus, `Could not reach the Torn API (${(e && e.message) ? e.message : e}). Check your connection.`, 'err');
     }
   }
 
@@ -989,7 +989,7 @@
         setStatus(pollStatus, `Synced holdings for ${count} stock${count > 1 ? 's' : ''}. Double-check the numbers look right.`, 'ok');
       }
     }catch(e){
-      setStatus(pollStatus, 'Could not reach the Torn API to sync holdings.', 'err');
+      setStatus(pollStatus, `Could not reach the Torn API to sync holdings (${(e && e.message) ? e.message : e}).`, 'err');
     }
   }
   syncHoldingsBtn.addEventListener('click', syncHoldings);
@@ -1239,7 +1239,8 @@
       renderStockList();
       setStatus(pollStatus, `Last checked ${new Date().toLocaleTimeString()}.`);
     }catch(e){
-      setStatus(pollStatus, 'Price check failed — will retry.', 'err');
+      const reason = (e && e.message) ? e.message : String(e);
+      setStatus(pollStatus, `Price check failed (${reason}) — will retry.`, 'err');
     }
   }
 
