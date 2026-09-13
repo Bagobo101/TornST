@@ -398,6 +398,7 @@
           Check a stock to start watching it. "Notify below/above" are fixed prices that trigger an alert. "Or if it drops/rises %" is an alternative — it locks in the current price as a baseline the moment you set it, and alerts once the price moves that % away from that baseline. Leave any of these blank to skip.<br><br>
           "Range so far" is the lowest and highest price this app has seen since you opened it (Torn's basic API doesn't hand over full history). The "% of range" number is just where today's price sits between that low and high — 0% is the session low, 100% is the session high. It's a description of the past, not a forecast: it can't tell you where the price is headed next, and Torn's market can move against it at any time.<br><br>
           "Watched only" hides everything except your checked stocks, useful once your list gets long.<br><br>
+          "Since last visit" compares the price now to whatever it was the last time you had this app open — including after closing it entirely. A "NEW LOW"/"NEW HIGH" badge means this exact check just pushed the price past every reading this app has ever recorded for that stock, and watched stocks get a notification for it too.<br><br>
           Where Torn provides it, a line under the range shows that stock's investor benefit, based on what you've entered in "You own." Active benefits (money, items, etc.) pay out on a repeating schedule and scale in "Benefit Block" steps — the 1st increment needs one block of shares, the 2nd needs 3 blocks total, the 3rd needs 7, doubling each time — so it shows your current increment and how many more shares unlock the next one. Passive benefits (like a bank interest or racing boost) are a single on/off perk that needs the share count held for 7 days straight.<br><br>
           "Your avg buy price" is what you actually paid per share, on average — enter it to see real profit or loss next to "You own," not just current value. "Last collected" (for stocks with active payouts) is the last date you claimed the dividend in-game; the app uses it to count down to your next payout and can notify you when one's ready.<br><br>
           If a watched stock is near its low and you've entered a budget, it appears above as a buy signal with a suggested share count. If you own shares in one that's near its high, it appears as a "consider selling" flag instead.
@@ -533,6 +534,9 @@
   const STORE_RANGES = 'torn-stock-ranges';
   const STORE_BUDGET = 'torn-stock-budget';
   const STORE_WATCHED_ONLY = 'torn-stock-watched-only';
+  const STORE_LAST_PRICES = 'torn-stock-last-prices';
+  let prevVisitPrices = {};   // prices as of your last visit, frozen at load time for comparison
+  let extremeEvents = {};     // id -> 'low'|'high', reset each poll: a brand-new record just broken this cycle
 
   function setStatus(el, msg, type){
     el.textContent = msg || '';
@@ -552,6 +556,10 @@
       const r = localStorage.getItem(STORE_RANGES);
       if(r){ ranges = JSON.parse(r); }
     }catch(e){ /* no ranges saved yet */ }
+    try{
+      const lp = localStorage.getItem(STORE_LAST_PRICES);
+      if(lp){ prevVisitPrices = JSON.parse(lp); }
+    }catch(e){ /* first visit, nothing to compare to yet */ }
     try{
       const b = localStorage.getItem(STORE_BUDGET);
       if(b){ budget = parseFloat(b); budgetInput.value = budget; }
@@ -574,6 +582,14 @@
   function persistRanges(){
     try{ localStorage.setItem(STORE_RANGES, JSON.stringify(ranges)); }
     catch(e){ console.error('Could not save ranges', e); }
+  }
+
+  function persistLastPrices(){
+    try{
+      const snapshot = {};
+      Object.entries(stocksCache).forEach(([id, s]) => { snapshot[id] = s.price; });
+      localStorage.setItem(STORE_LAST_PRICES, JSON.stringify(snapshot));
+    }catch(e){ console.error('Could not save last-visit prices', e); }
   }
 
   budgetInput.addEventListener('change', () => {
@@ -613,12 +629,13 @@
   });
 
   function updateRanges(){
+    extremeEvents = {};
     Object.entries(stocksCache).forEach(([id, s]) => {
       const p = Number(s.price);
       if(!ranges[id]){ ranges[id] = { high: p, low: p }; }
       else{
-        if(p > ranges[id].high) ranges[id].high = p;
-        if(p < ranges[id].low) ranges[id].low = p;
+        if(p > ranges[id].high){ ranges[id].high = p; extremeEvents[id] = 'high'; }
+        if(p < ranges[id].low){ ranges[id].low = p; extremeEvents[id] = 'low'; }
       }
     });
   }
@@ -639,6 +656,7 @@
       if(announce) setStatus(keyStatus, `Key works — ${Object.keys(stocksCache).length} stocks loaded.`, 'ok');
       updateRanges();
       persistRanges();
+      persistLastPrices();
       updateTape();
       renderStockList();
       startPolling();
@@ -699,6 +717,18 @@
       const r = ranges[s.id];
       let rangeLine = '';
       let suggestion = '';
+      let lastVisitLine = '';
+      const isNewLow = extremeEvents[s.id] === 'low';
+      const isNewHigh = extremeEvents[s.id] === 'high';
+
+      if(prevVisitPrices[s.id] !== undefined && prevVisitPrices[s.id] !== s.price){
+        const prevP = Number(prevVisitPrices[s.id]);
+        const curP = Number(s.price);
+        const deltaPct = ((curP - prevP) / prevP) * 100;
+        const cls = deltaPct >= 0 ? 'up' : 'down';
+        lastVisitLine = `<div class="range-line">Since last visit: <span style="color:var(--${cls});">${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}%</span> ($${prevP.toFixed(2)} → $${curP.toFixed(2)})</div>`;
+      }
+
       if(r){
         const price = Number(s.price);
         const span = r.high - r.low;
@@ -707,7 +737,14 @@
         if(pct <= 0.33) sig = { cls:'buy', label:'near session low' };
         else if(pct >= 0.66) sig = { cls:'high', label:'near session high' };
 
-        rangeLine = `<div class="range-line">Range so far: $${r.low.toFixed(2)} – $${r.high.toFixed(2)} &nbsp;·&nbsp; <span class="signal-tag ${sig.cls}">${sig.label}</span> &nbsp;·&nbsp; <span title="Position within the observed range, not a forecast">${Math.round(pct*100)}% of range</span></div>`;
+        const extremeBadge = isNewLow ? ` <span class="signal-tag buy">NEW LOW</span>` : (isNewHigh ? ` <span class="signal-tag high">NEW HIGH</span>` : '');
+        rangeLine = `<div class="range-line">Range so far: $${r.low.toFixed(2)} – $${r.high.toFixed(2)} &nbsp;·&nbsp; <span class="signal-tag ${sig.cls}">${sig.label}</span> &nbsp;·&nbsp; <span title="Position within the observed range, not a forecast">${Math.round(pct*100)}% of range</span>${extremeBadge}</div>`;
+
+        if(checked && isNewLow){
+          signalsSummary.push({ type:'buy', name:s.name, acronym:s.acronym, text:`Just hit a new session low ($${price.toFixed(2)})` });
+        }else if(checked && isNewHigh && w.owned > 0){
+          signalsSummary.push({ type:'sell', name:s.name, acronym:s.acronym, text:`Just hit a new session high ($${price.toFixed(2)}), you hold ${w.owned.toLocaleString()} shares` });
+        }
 
         if(checked && sig.cls === 'buy' && budget && budget > 0){
           const shares = Math.floor(budget / price);
@@ -779,6 +816,7 @@
             <div class="price">$${Number(s.price).toFixed(2)}</div>
           </div>
           ${rangeLine}
+          ${lastVisitLine}
           ${benefitLine}
           ${dividendLine}
           <div class="thresh-panel">
@@ -1146,12 +1184,18 @@
       });
       updateRanges();
       persistRanges();
+      persistLastPrices();
       updateTape();
 
       let changed = false;
       Object.entries(watches).forEach(([id, w]) => {
         const cur = stocksCache[id] ? Number(stocksCache[id].price) : null;
         if(cur === null) return;
+        if(extremeEvents[id] === 'low'){
+          notify(`${w.acronym} hit a new session low`, `Now $${cur.toFixed(2)} — the lowest this app has seen it.`);
+        }else if(extremeEvents[id] === 'high'){
+          notify(`${w.acronym} hit a new session high`, `Now $${cur.toFixed(2)} — the highest this app has seen it.`);
+        }
         if(w.high !== null){
           if(cur >= w.high && w.armedHigh){
             notify(`${w.acronym} hit your high`, `Now $${cur.toFixed(2)}, at or above $${w.high}.`);
