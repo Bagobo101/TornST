@@ -282,6 +282,26 @@
     color:var(--bone-dim);
   }
   .spark{width:100%; height:32px; display:block;}
+  .spark-point{transition:opacity 0.1s ease;}
+  .spark-point:hover{opacity:0.15;}
+  .spark-tooltip{
+    position:fixed;
+    z-index:9999;
+    display:none;
+    background:var(--panel-2);
+    border:1px solid var(--edge);
+    border-radius:6px;
+    padding:6px 10px;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--bone);
+    pointer-events:none;
+    box-shadow:0 4px 14px rgba(0,0,0,0.4);
+    white-space:nowrap;
+  }
+  .spark-tooltip .spark-tooltip-time{color:var(--bone-dim); margin-bottom:3px;}
+  .spark-tooltip .up{color:var(--up);}
+  .spark-tooltip .down{color:var(--down);}
   .spark-meta{
     display:flex;
     justify-content:space-between;
@@ -604,7 +624,7 @@
     Prices come straight from the official Torn API using your key, from your browser — nothing is sent anywhere else.
     If you use "Sync my holdings," it makes one extra call to Torn's <code>user → stocks</code> selection to read your own share counts — this needs a key with that selection enabled, and is entirely optional; you can always type "You own" by hand instead.
     High/low shows the range observed since you started tracking each stock here, not its full history.
-    The line graph on each card plots price points this browser has actually checked since you started using the app — not Torn's full historical chart — so it starts flat and fills in as the app keeps polling.
+    The line graph on each card plots price points that have actually been checked since you started using the app — not Torn's full historical chart. Once the site owner sets up shared history, points from every visitor merge into one graph everyone sees; otherwise it's just this browser's own checks.
     Buy suggestions are a simple heuristic — where the price sits in the range you've seen — not financial advice; the game's stock market can move against any pattern.
     Alerts fire once per crossing, then re-arm once the price moves back between your thresholds. Closing this tab pauses checking.
   </p>
@@ -612,6 +632,9 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
+<!-- Firebase (shared/crowdsourced price history). See CLOUD SETUP comment at top of the script below. -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 (function(){
   const $ = (id) => document.getElementById(id);
@@ -721,6 +744,81 @@
     catch(e){ console.error('Could not save watchlist', e); }
   }
 
+  // ===================== CLOUD SETUP (shared/crowdsourced price history) =====================
+  // Fill this in with YOUR OWN Firebase project's config (Firebase console → Project settings →
+  // General → "Your apps" → web app → the firebaseConfig object). These values are meant to be
+  // public — they identify your project, they are not secrets — access is controlled by the
+  // Realtime Database Rules you set in the Firebase console, not by hiding this object.
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyB_Pkr96vfnlBTV4HlRJ5Gy2LOHvTr0AHs",
+    databaseURL: "https://torn-stock-alert-d6c9c-default-rtdb.firebaseio.com",
+    projectId: "torn-stock-alert-d6c9c"
+  };
+  const CLOUD_PRUNE_CAP = 500;   // soft cap on stored points per stock in the cloud
+  const CLOUD_MERGE_CAP = 300;   // max points per stock merged into the on-screen graph
+
+  let cloudHistory = {};   // id -> [[t, p], ...] as received live from Firebase
+  let cloudEnabled = false;
+  let cloudDb = null;
+
+  function initCloud(){
+    if(FIREBASE_CONFIG.apiKey.startsWith('PASTE_') ) return; // not configured yet — app still works fully locally
+    try{
+      firebase.initializeApp(FIREBASE_CONFIG);
+      cloudDb = firebase.database();
+      cloudEnabled = true;
+      cloudDb.ref('history').on('value', snap => {
+        const val = snap.val() || {};
+        const next = {};
+        Object.entries(val).forEach(([id, points]) => {
+          const arr = Object.values(points || {})
+            .filter(pt => pt && typeof pt.t === 'number' && typeof pt.p === 'number')
+            .sort((a, b) => a.t - b.t)
+            .map(pt => [pt.t, pt.p]);
+          next[id] = arr;
+        });
+        cloudHistory = next;
+        renderStockList();
+      });
+    }catch(e){
+      console.error('Cloud sync failed to start — the app will keep working with local-only history.', e);
+      cloudEnabled = false;
+    }
+  }
+
+  function pushHistoryToCloud(id, t, p){
+    if(!cloudEnabled) return;
+    cloudDb.ref(`history/${id}`).push({ t, p });
+    // Best-effort pruning so one stock's node doesn't grow forever. Any connected browser
+    // can do this — it's not perfectly race-free with many simultaneous users, but is fine
+    // at small scale.
+    if(Math.random() < 0.05){
+      cloudDb.ref(`history/${id}`).orderByChild('t').limitToFirst(50).once('value', snap => {
+        const val = snap.val() || {};
+        const keys = Object.keys(val);
+        if(keys.length > CLOUD_PRUNE_CAP){
+          // only trim if this node is actually over the cap overall; re-check count first
+          cloudDb.ref(`history/${id}`).once('value', full => {
+            const count = full.numChildren ? full.numChildren() : Object.keys(full.val() || {}).length;
+            if(count > CLOUD_PRUNE_CAP){
+              keys.forEach(k => cloudDb.ref(`history/${id}/${k}`).remove());
+            }
+          });
+        }
+      });
+    }
+  }
+
+  // Merge this browser's own locally-observed points with everyone else's cloud points for one stock.
+  function mergedHistoryFor(id){
+    const local = priceHistory[id] || [];
+    const cloud = cloudHistory[id] || [];
+    const map = new Map(); // dedupe by timestamp
+    [...local, ...cloud].forEach(([t, p]) => map.set(t, p));
+    const merged = [...map.entries()].sort((a, b) => a[0] - b[0]);
+    return merged.length > CLOUD_MERGE_CAP ? merged.slice(merged.length - CLOUD_MERGE_CAP) : merged;
+  }
+
   function persistRanges(){
     try{ localStorage.setItem(STORE_RANGES, JSON.stringify(ranges)); }
     catch(e){ console.error('Could not save ranges', e); }
@@ -733,8 +831,10 @@
       const arr = priceHistory[id];
       const last = arr[arr.length - 1];
       if(!last || last[1] !== p){
-        arr.push([Date.now(), p]);
+        const t = Date.now();
+        arr.push([t, p]);
         if(arr.length > HISTORY_CAP) arr.splice(0, arr.length - HISTORY_CAP);
+        pushHistoryToCloud(id, t, p);
       }
     });
   }
@@ -745,7 +845,7 @@
   }
 
   function buildSparkline(id){
-    const hist = priceHistory[id];
+    const hist = cloudEnabled ? mergedHistoryFor(id) : priceHistory[id];
     if(!hist || hist.length < 2) return null;
     const w = 280, h = 32, pad = 2;
     const prices = hist.map(pt => pt[1]);
@@ -753,18 +853,80 @@
     const max = Math.max(...prices);
     const span = (max - min) || 1;
     const stepX = (w - pad * 2) / (prices.length - 1);
-    const points = prices.map((p, i) => {
-      const x = pad + i * stepX;
-      const y = h - pad - ((p - min) / span) * (h - pad * 2);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(' ');
+    const xAt = i => pad + i * stepX;
+    const yAt = i => h - pad - ((prices[i] - min) / span) * (h - pad * 2);
+    const points = prices.map((_, i) => `${xAt(i).toFixed(1)},${yAt(i).toFixed(1)}`).join(' ');
     const up = prices[prices.length - 1] >= prices[0];
     const color = up ? 'var(--up)' : 'var(--down)';
+
+    // Cap how many tappable points we render per chart (independent of how much data underlies
+    // it) so long histories don't turn into hundreds of hit targets on the page.
+    const MAX_MARKERS = 30;
+    const markerIdx = hist.length <= MAX_MARKERS
+      ? hist.map((_, i) => i)
+      : Array.from({ length: MAX_MARKERS }, (_, i) => Math.round(i * (hist.length - 1) / (MAX_MARKERS - 1)));
+    const basePrice = prices[0];
+    const markers = markerIdx.map(i => {
+      const p = prices[i];
+      const t = hist[i][0];
+      const pct = ((p - basePrice) / basePrice) * 100;
+      return `<circle class="spark-point" cx="${xAt(i).toFixed(1)}" cy="${yAt(i).toFixed(1)}" r="7" style="fill:${color}; opacity:0; pointer-events:all; cursor:pointer;" data-t="${t}" data-p="${p.toFixed(2)}" data-pct="${pct.toFixed(2)}"></circle>`;
+    }).join('');
+
     const svg = `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
         <polyline points="${points}" fill="none" style="stroke:${color}; stroke-width:1.6; stroke-linejoin:round; stroke-linecap:round;"/>
+        ${markers}
       </svg>`;
     return { svg, min, max, points: hist.length };
   }
+
+  let sparkTooltipEl = null;
+  function ensureSparkTooltip(){
+    if(sparkTooltipEl) return sparkTooltipEl;
+    sparkTooltipEl = document.createElement('div');
+    sparkTooltipEl.className = 'spark-tooltip';
+    document.body.appendChild(sparkTooltipEl);
+    return sparkTooltipEl;
+  }
+
+  function showSparkTooltip(clientX, clientY, t, p, pct){
+    const el = ensureSparkTooltip();
+    const d = new Date(t);
+    const stamp = `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const sign = pct >= 0 ? '+' : '';
+    const cls = pct >= 0 ? 'up' : 'down';
+    el.innerHTML = `<div class="spark-tooltip-time">${stamp}</div><div>$${Number(p).toFixed(2)} <span class="${cls}">(${sign}${Number(pct).toFixed(1)}% since graph start)</span></div>`;
+    el.style.display = 'block';
+    const pad = 12;
+    let left = clientX + pad;
+    let top = clientY + pad;
+    const rect = el.getBoundingClientRect();
+    if(left + rect.width > window.innerWidth - 6) left = clientX - rect.width - pad;
+    if(top + rect.height > window.innerHeight - 6) top = clientY - rect.height - pad;
+    el.style.left = Math.max(6, left) + 'px';
+    el.style.top = Math.max(6, top) + 'px';
+  }
+
+  function hideSparkTooltip(){
+    if(sparkTooltipEl) sparkTooltipEl.style.display = 'none';
+  }
+
+  document.addEventListener('click', (e) => {
+    const pt = e.target.closest('.spark-point');
+    if(pt){
+      e.stopPropagation();
+      showSparkTooltip(e.clientX, e.clientY, Number(pt.dataset.t), Number(pt.dataset.p), Number(pt.dataset.pct));
+    }else if(!e.target.closest('.spark-tooltip')){
+      hideSparkTooltip();
+    }
+  });
+  document.addEventListener('touchstart', (e) => {
+    const pt = e.target.closest('.spark-point');
+    if(pt){
+      const touch = e.touches[0];
+      showSparkTooltip(touch.clientX, touch.clientY, Number(pt.dataset.t), Number(pt.dataset.p), Number(pt.dataset.pct));
+    }
+  }, { passive: true });
 
   function persistLastPrices(){
     try{
@@ -1574,6 +1736,7 @@
   checkNowBtn.addEventListener('click', checkPrices);
 
   loadPersisted();
+  initCloud();
 
   // ---- PWA: service worker + install prompt ----
   if('serviceWorker' in navigator){
