@@ -260,6 +260,25 @@
   }
   .card-details[open] summary{color:var(--gold);}
   .card-details[open] summary::before{transform:rotate(90deg);}
+  .key-field-wrap{position:relative; display:flex; align-items:center;}
+  .key-field-wrap input{width:100%; padding-right:38px;}
+  .key-toggle-btn{
+    position:absolute;
+    right:6px;
+    top:50%;
+    transform:translateY(-50%);
+    background:none;
+    border:none;
+    padding:4px 6px;
+    font-size:15px;
+    line-height:1;
+    cursor:pointer;
+    color:var(--bone-dim);
+    opacity:0.8;
+  }
+  .key-toggle-btn:hover{opacity:1; color:var(--bone);}
+  .key-toggle-btn.showing{color:var(--gold);}
+
   .thresh-panel{
     display:flex;
     gap:10px;
@@ -471,7 +490,10 @@
     <div class="row">
       <div>
         <label for="apiKey">Torn API key</label>
-        <input id="apiKey" type="password" placeholder="Paste your key" autocomplete="off">
+        <div class="key-field-wrap">
+          <input id="apiKey" type="password" placeholder="Paste your key" autocomplete="off">
+          <button type="button" id="toggleKeyBtn" class="key-toggle-btn" aria-label="Show API key" title="Show API key">👁</button>
+        </div>
       </div>
     </div>
     <div class="row" style="gap:10px;">
@@ -639,6 +661,15 @@
 (function(){
   const $ = (id) => document.getElementById(id);
   const keyInput = $('apiKey');
+  const toggleKeyBtn = $('toggleKeyBtn');
+  toggleKeyBtn.addEventListener('click', () => {
+    const showing = keyInput.type === 'text';
+    keyInput.type = showing ? 'password' : 'text';
+    toggleKeyBtn.textContent = showing ? '👁' : '🙈';
+    toggleKeyBtn.classList.toggle('showing', !showing);
+    toggleKeyBtn.title = showing ? 'Show API key' : 'Hide API key';
+    toggleKeyBtn.setAttribute('aria-label', toggleKeyBtn.title);
+  });
   const keyStatus = $('keyStatus');
   const notifBtn = $('notifBtn');
   const stockFilter = $('stockFilter');
@@ -761,12 +792,26 @@
   let cloudEnabled = false;
   let cloudDb = null;
 
+  const STORE_BACKFILLED = 'torn-stock-history-backfilled';
+
+  function backfillLocalHistoryToCloud(){
+    if(!cloudEnabled) return;
+    try{
+      if(localStorage.getItem(STORE_BACKFILLED)) return; // already done on this browser
+    }catch(e){ /* if storage is unavailable, just skip backfill rather than repeat it forever */ return; }
+    Object.entries(priceHistory).forEach(([id, arr]) => {
+      arr.forEach(([t, p]) => pushHistoryToCloud(id, t, p));
+    });
+    try{ localStorage.setItem(STORE_BACKFILLED, '1'); }catch(e){ /* non-fatal */ }
+  }
+
   function initCloud(){
     if(FIREBASE_CONFIG.apiKey.startsWith('PASTE_') ) return; // not configured yet — app still works fully locally
     try{
       firebase.initializeApp(FIREBASE_CONFIG);
       cloudDb = firebase.database();
       cloudEnabled = true;
+      backfillLocalHistoryToCloud();
       cloudDb.ref('history').on('value', snap => {
         const val = snap.val() || {};
         const next = {};
