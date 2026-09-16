@@ -232,103 +232,22 @@
   }
   .tick-arrow.up{color:var(--up);}
   .tick-arrow.down{color:var(--down);}
-  .card-details{
-    display:none;
-    margin-top:12px;
-    padding-top:12px;
-    border-top:1px solid var(--edge);
-  }
-  .stock-card.checked .card-details{display:block;}
-  .card-details summary{
-    cursor:pointer;
-    list-style:none;
-    user-select:none;
-    display:inline-flex;
-    align-items:center;
-    gap:7px;
-    font-family:var(--slab);
-    font-weight:700;
-    font-size:12.5px;
-    color:var(--gold-dim);
-  }
-  .card-details summary::-webkit-details-marker{display:none;}
-  .card-details summary::before{
-    content:'▸';
-    font-size:10px;
-    display:inline-block;
-    transition:transform 0.15s ease;
-  }
-  .card-details[open] summary{color:var(--gold);}
-  .card-details[open] summary::before{transform:rotate(90deg);}
-  .key-field-wrap{position:relative; display:flex; align-items:center;}
-  .key-field-wrap input{width:100%; padding-right:38px;}
-  .key-toggle-btn{
-    position:absolute;
-    right:6px;
-    top:50%;
-    transform:translateY(-50%);
-    background:none;
-    border:none;
-    padding:4px 6px;
-    font-size:15px;
-    line-height:1;
-    cursor:pointer;
-    color:var(--bone-dim);
-    opacity:0.8;
-  }
-  .key-toggle-btn:hover{opacity:1; color:var(--bone);}
-  .key-toggle-btn.showing{color:var(--gold);}
-
   .thresh-panel{
-    display:flex;
+    display:none;
     gap:10px;
     flex-wrap:wrap;
     margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid var(--edge);
     align-items:flex-end;
   }
+  .stock-card.checked .thresh-panel{display:flex;}
   .thresh-panel .field{flex:1; min-width:130px;}
   .thresh-panel label{margin-bottom:4px;}
   .thresh-panel input{width:100%;}
   .armed-tag{font-family:var(--mono); font-size:11px; padding:2px 7px; border-radius:10px; border:1px solid var(--edge); color:var(--bone-dim); white-space:nowrap;}
   .armed-tag.hit-high{border-color:var(--up); color:var(--up);}
   .armed-tag.hit-low{border-color:var(--down); color:var(--down);}
-
-  .spark-wrap{margin-top:8px;}
-  .spark-wrap.spark-empty{
-    font-family:var(--slab);
-    font-size:11.5px;
-    font-style:italic;
-    color:var(--bone-dim);
-  }
-  .spark{width:100%; height:32px; display:block;}
-  .spark-point{transition:opacity 0.1s ease;}
-  .spark-point:hover{opacity:0.15;}
-  .spark-tooltip{
-    position:fixed;
-    z-index:9999;
-    display:none;
-    background:var(--panel-2);
-    border:1px solid var(--edge);
-    border-radius:6px;
-    padding:6px 10px;
-    font-family:var(--mono);
-    font-size:11px;
-    color:var(--bone);
-    pointer-events:none;
-    box-shadow:0 4px 14px rgba(0,0,0,0.4);
-    white-space:nowrap;
-  }
-  .spark-tooltip .spark-tooltip-time{color:var(--bone-dim); margin-bottom:3px;}
-  .spark-tooltip .up{color:var(--up);}
-  .spark-tooltip .down{color:var(--down);}
-  .spark-meta{
-    display:flex;
-    justify-content:space-between;
-    font-family:var(--mono);
-    font-size:10.5px;
-    color:var(--bone-dim);
-    margin-top:2px;
-  }
 
   .benefit-line{
     font-family:var(--slab);
@@ -356,6 +275,15 @@
   .position-then{color:var(--bone-dim);}
   .position-now{color:var(--bone);}
   .position-pl{font-weight:700; margin-left:auto;}
+
+  .sparkline-wrap{
+    width:100%;
+    height:46px;
+    margin:6px 0 2px;
+    padding-left:30px;
+    box-sizing:border-box;
+  }
+  .sparkline{width:100%; height:100%; display:block;}
 
   .range-line{
     font-family:var(--mono);
@@ -490,10 +418,7 @@
     <div class="row">
       <div>
         <label for="apiKey">Torn API key</label>
-        <div class="key-field-wrap">
-          <input id="apiKey" type="password" placeholder="Paste your key" autocomplete="off">
-          <button type="button" id="toggleKeyBtn" class="key-toggle-btn" aria-label="Show API key" title="Show API key">👁</button>
-        </div>
+        <input id="apiKey" type="password" placeholder="Paste your key" autocomplete="off">
       </div>
     </div>
     <div class="row" style="gap:10px;">
@@ -646,7 +571,6 @@
     Prices come straight from the official Torn API using your key, from your browser — nothing is sent anywhere else.
     If you use "Sync my holdings," it makes one extra call to Torn's <code>user → stocks</code> selection to read your own share counts — this needs a key with that selection enabled, and is entirely optional; you can always type "You own" by hand instead.
     High/low shows the range observed since you started tracking each stock here, not its full history.
-    The line graph on each card plots price points that have actually been checked since you started using the app — not Torn's full historical chart. Once the site owner sets up shared history, points from every visitor merge into one graph everyone sees; otherwise it's just this browser's own checks.
     Buy suggestions are a simple heuristic — where the price sits in the range you've seen — not financial advice; the game's stock market can move against any pattern.
     Alerts fire once per crossing, then re-arm once the price moves back between your thresholds. Closing this tab pauses checking.
   </p>
@@ -654,22 +578,10 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
-<!-- Firebase (shared/crowdsourced price history). See CLOUD SETUP comment at top of the script below. -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 (function(){
   const $ = (id) => document.getElementById(id);
   const keyInput = $('apiKey');
-  const toggleKeyBtn = $('toggleKeyBtn');
-  toggleKeyBtn.addEventListener('click', () => {
-    const showing = keyInput.type === 'text';
-    keyInput.type = showing ? 'password' : 'text';
-    toggleKeyBtn.textContent = showing ? '👁' : '🙈';
-    toggleKeyBtn.classList.toggle('showing', !showing);
-    toggleKeyBtn.title = showing ? 'Show API key' : 'Hide API key';
-    toggleKeyBtn.setAttribute('aria-label', toggleKeyBtn.title);
-  });
   const keyStatus = $('keyStatus');
   const notifBtn = $('notifBtn');
   const stockFilter = $('stockFilter');
@@ -703,7 +615,6 @@
   let stocksCache = {};      // id -> {name, acronym, price}
   let watches = {};          // id -> {name, acronym, low, high, armedHigh, armedLow}
   let ranges = {};           // id -> {high, low}  (observed since tracking started)
-  let priceHistory = {};     // id -> [[timestamp, price], ...] observed since tracking started, for the live graph
   let budget = null;
   let pollTimer = null;
   let swRegistration = null; // set once the service worker registers; needed for notifications on Chrome/Android
@@ -711,12 +622,13 @@
   const STORE_KEY = 'torn-stock-key';
   const STORE_WATCHES = 'torn-stock-watches';
   const STORE_RANGES = 'torn-stock-ranges';
-  const STORE_HISTORY = 'torn-stock-history';
-  const HISTORY_CAP = 300; // max points kept per stock, oldest dropped first
   const STORE_BUDGET = 'torn-stock-budget';
   const STORE_WATCHED_ONLY = 'torn-stock-watched-only';
   const STORE_LAST_PRICES = 'torn-stock-last-prices';
   const STORE_ALERT_LOG = 'torn-stock-alert-log';
+  const STORE_HISTORY = 'torn-stock-history';
+  let priceHistory = {};      // id -> [{t: epoch_ms, p: price}, ...], oldest first, capped
+  const HISTORY_CAP = 300;    // points kept per stock
   let prevVisitPrices = {};   // prices as of your last visit, frozen at load time for comparison
   let alertLog = [];          // { time, title, body }, newest first, capped at 50
   let lastCheckTime = null;   // ms epoch of the last successful poll
@@ -747,10 +659,6 @@
       if(lp){ prevVisitPrices = JSON.parse(lp); }
     }catch(e){ /* first visit, nothing to compare to yet */ }
     try{
-      const h = localStorage.getItem(STORE_HISTORY);
-      if(h){ priceHistory = JSON.parse(h); }
-    }catch(e){ /* no graph history saved yet */ }
-    try{
       const b = localStorage.getItem(STORE_BUDGET);
       if(b){ budget = parseFloat(b); budgetInput.value = budget; }
     }catch(e){ /* no budget saved yet */ }
@@ -762,6 +670,10 @@
       const al = localStorage.getItem(STORE_ALERT_LOG);
       if(al){ alertLog = JSON.parse(al); }
     }catch(e){ /* no history yet */ }
+    try{
+      const ph = localStorage.getItem(STORE_HISTORY);
+      if(ph){ priceHistory = JSON.parse(ph); }
+    }catch(e){ /* no price history yet */ }
     renderAlertLog();
     startCheckTimerTick();
     if(apiKey){
@@ -775,203 +687,10 @@
     catch(e){ console.error('Could not save watchlist', e); }
   }
 
-  // ===================== CLOUD SETUP (shared/crowdsourced price history) =====================
-  // Fill this in with YOUR OWN Firebase project's config (Firebase console → Project settings →
-  // General → "Your apps" → web app → the firebaseConfig object). These values are meant to be
-  // public — they identify your project, they are not secrets — access is controlled by the
-  // Realtime Database Rules you set in the Firebase console, not by hiding this object.
-  const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyB_Pkr96vfnlBTV4HlRJ5Gy2LOHvTr0AHs",
-    databaseURL: "https://torn-stock-alert-d6c9c-default-rtdb.firebaseio.com",
-    projectId: "torn-stock-alert-d6c9c"
-  };
-  const CLOUD_PRUNE_CAP = 500;   // soft cap on stored points per stock in the cloud
-  const CLOUD_MERGE_CAP = 300;   // max points per stock merged into the on-screen graph
-
-  let cloudHistory = {};   // id -> [[t, p], ...] as received live from Firebase
-  let cloudEnabled = false;
-  let cloudDb = null;
-
-  const STORE_BACKFILLED = 'torn-stock-history-backfilled';
-
-  function backfillLocalHistoryToCloud(){
-    if(!cloudEnabled) return;
-    try{
-      if(localStorage.getItem(STORE_BACKFILLED)) return; // already done on this browser
-    }catch(e){ /* if storage is unavailable, just skip backfill rather than repeat it forever */ return; }
-    Object.entries(priceHistory).forEach(([id, arr]) => {
-      arr.forEach(([t, p]) => pushHistoryToCloud(id, t, p));
-    });
-    try{ localStorage.setItem(STORE_BACKFILLED, '1'); }catch(e){ /* non-fatal */ }
-  }
-
-  function initCloud(){
-    if(FIREBASE_CONFIG.apiKey.startsWith('PASTE_') ) return; // not configured yet — app still works fully locally
-    try{
-      firebase.initializeApp(FIREBASE_CONFIG);
-      cloudDb = firebase.database();
-      cloudEnabled = true;
-      backfillLocalHistoryToCloud();
-      cloudDb.ref('history').on('value', snap => {
-        const val = snap.val() || {};
-        const next = {};
-        Object.entries(val).forEach(([id, points]) => {
-          const arr = Object.values(points || {})
-            .filter(pt => pt && typeof pt.t === 'number' && typeof pt.p === 'number')
-            .sort((a, b) => a.t - b.t)
-            .map(pt => [pt.t, pt.p]);
-          next[id] = arr;
-        });
-        cloudHistory = next;
-        renderStockList();
-      });
-    }catch(e){
-      console.error('Cloud sync failed to start — the app will keep working with local-only history.', e);
-      cloudEnabled = false;
-    }
-  }
-
-  function pushHistoryToCloud(id, t, p){
-    if(!cloudEnabled) return;
-    cloudDb.ref(`history/${id}`).push({ t, p });
-    // Best-effort pruning so one stock's node doesn't grow forever. Any connected browser
-    // can do this — it's not perfectly race-free with many simultaneous users, but is fine
-    // at small scale.
-    if(Math.random() < 0.05){
-      cloudDb.ref(`history/${id}`).orderByChild('t').limitToFirst(50).once('value', snap => {
-        const val = snap.val() || {};
-        const keys = Object.keys(val);
-        if(keys.length > CLOUD_PRUNE_CAP){
-          // only trim if this node is actually over the cap overall; re-check count first
-          cloudDb.ref(`history/${id}`).once('value', full => {
-            const count = full.numChildren ? full.numChildren() : Object.keys(full.val() || {}).length;
-            if(count > CLOUD_PRUNE_CAP){
-              keys.forEach(k => cloudDb.ref(`history/${id}/${k}`).remove());
-            }
-          });
-        }
-      });
-    }
-  }
-
-  // Merge this browser's own locally-observed points with everyone else's cloud points for one stock.
-  function mergedHistoryFor(id){
-    const local = priceHistory[id] || [];
-    const cloud = cloudHistory[id] || [];
-    const map = new Map(); // dedupe by timestamp
-    [...local, ...cloud].forEach(([t, p]) => map.set(t, p));
-    const merged = [...map.entries()].sort((a, b) => a[0] - b[0]);
-    return merged.length > CLOUD_MERGE_CAP ? merged.slice(merged.length - CLOUD_MERGE_CAP) : merged;
-  }
-
   function persistRanges(){
     try{ localStorage.setItem(STORE_RANGES, JSON.stringify(ranges)); }
     catch(e){ console.error('Could not save ranges', e); }
   }
-
-  function recordHistory(){
-    Object.entries(stocksCache).forEach(([id, s]) => {
-      const p = Number(s.price);
-      if(!priceHistory[id]) priceHistory[id] = [];
-      const arr = priceHistory[id];
-      const last = arr[arr.length - 1];
-      if(!last || last[1] !== p){
-        const t = Date.now();
-        arr.push([t, p]);
-        if(arr.length > HISTORY_CAP) arr.splice(0, arr.length - HISTORY_CAP);
-        pushHistoryToCloud(id, t, p);
-      }
-    });
-  }
-
-  function persistHistory(){
-    try{ localStorage.setItem(STORE_HISTORY, JSON.stringify(priceHistory)); }
-    catch(e){ console.error('Could not save price history', e); }
-  }
-
-  function buildSparkline(id){
-    const hist = cloudEnabled ? mergedHistoryFor(id) : priceHistory[id];
-    if(!hist || hist.length < 2) return null;
-    const w = 280, h = 32, pad = 2;
-    const prices = hist.map(pt => pt[1]);
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
-    const span = (max - min) || 1;
-    const stepX = (w - pad * 2) / (prices.length - 1);
-    const xAt = i => pad + i * stepX;
-    const yAt = i => h - pad - ((prices[i] - min) / span) * (h - pad * 2);
-    const points = prices.map((_, i) => `${xAt(i).toFixed(1)},${yAt(i).toFixed(1)}`).join(' ');
-    const up = prices[prices.length - 1] >= prices[0];
-    const color = up ? 'var(--up)' : 'var(--down)';
-
-    // Cap how many tappable points we render per chart (independent of how much data underlies
-    // it) so long histories don't turn into hundreds of hit targets on the page.
-    const MAX_MARKERS = 30;
-    const markerIdx = hist.length <= MAX_MARKERS
-      ? hist.map((_, i) => i)
-      : Array.from({ length: MAX_MARKERS }, (_, i) => Math.round(i * (hist.length - 1) / (MAX_MARKERS - 1)));
-    const basePrice = prices[0];
-    const markers = markerIdx.map(i => {
-      const p = prices[i];
-      const t = hist[i][0];
-      const pct = ((p - basePrice) / basePrice) * 100;
-      return `<circle class="spark-point" cx="${xAt(i).toFixed(1)}" cy="${yAt(i).toFixed(1)}" r="7" style="fill:${color}; opacity:0; pointer-events:all; cursor:pointer;" data-t="${t}" data-p="${p.toFixed(2)}" data-pct="${pct.toFixed(2)}"></circle>`;
-    }).join('');
-
-    const svg = `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-        <polyline points="${points}" fill="none" style="stroke:${color}; stroke-width:1.6; stroke-linejoin:round; stroke-linecap:round;"/>
-        ${markers}
-      </svg>`;
-    return { svg, min, max, points: hist.length };
-  }
-
-  let sparkTooltipEl = null;
-  function ensureSparkTooltip(){
-    if(sparkTooltipEl) return sparkTooltipEl;
-    sparkTooltipEl = document.createElement('div');
-    sparkTooltipEl.className = 'spark-tooltip';
-    document.body.appendChild(sparkTooltipEl);
-    return sparkTooltipEl;
-  }
-
-  function showSparkTooltip(clientX, clientY, t, p, pct){
-    const el = ensureSparkTooltip();
-    const d = new Date(t);
-    const stamp = `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    const sign = pct >= 0 ? '+' : '';
-    const cls = pct >= 0 ? 'up' : 'down';
-    el.innerHTML = `<div class="spark-tooltip-time">${stamp}</div><div>$${Number(p).toFixed(2)} <span class="${cls}">(${sign}${Number(pct).toFixed(1)}% since graph start)</span></div>`;
-    el.style.display = 'block';
-    const pad = 12;
-    let left = clientX + pad;
-    let top = clientY + pad;
-    const rect = el.getBoundingClientRect();
-    if(left + rect.width > window.innerWidth - 6) left = clientX - rect.width - pad;
-    if(top + rect.height > window.innerHeight - 6) top = clientY - rect.height - pad;
-    el.style.left = Math.max(6, left) + 'px';
-    el.style.top = Math.max(6, top) + 'px';
-  }
-
-  function hideSparkTooltip(){
-    if(sparkTooltipEl) sparkTooltipEl.style.display = 'none';
-  }
-
-  document.addEventListener('click', (e) => {
-    const pt = e.target.closest('.spark-point');
-    if(pt){
-      e.stopPropagation();
-      showSparkTooltip(e.clientX, e.clientY, Number(pt.dataset.t), Number(pt.dataset.p), Number(pt.dataset.pct));
-    }else if(!e.target.closest('.spark-tooltip')){
-      hideSparkTooltip();
-    }
-  });
-  document.addEventListener('touchstart', (e) => {
-    const pt = e.target.closest('.spark-point');
-    if(pt){
-      const touch = e.touches[0];
-      showSparkTooltip(touch.clientX, touch.clientY, Number(pt.dataset.t), Number(pt.dataset.p), Number(pt.dataset.pct));
-    }
-  }, { passive: true });
 
   function persistLastPrices(){
     try{
@@ -979,6 +698,76 @@
       Object.entries(stocksCache).forEach(([id, s]) => { snapshot[id] = s.price; });
       localStorage.setItem(STORE_LAST_PRICES, JSON.stringify(snapshot));
     }catch(e){ console.error('Could not save last-visit prices', e); }
+  }
+
+  function extractPriceValue(obj){
+    // Torn's schema documents last_day/week/month/year as "Price" objects, but the exact
+    // field name isn't confirmed to return real data — check the common shapes defensively.
+    if(obj === null || obj === undefined) return null;
+    if(typeof obj === 'number') return obj;
+    if(typeof obj === 'object'){
+      if(typeof obj.value === 'number') return obj.value;
+      if(typeof obj.price === 'number') return obj.price;
+      if(typeof obj.current_price === 'number') return obj.current_price;
+    }
+    return null;
+  }
+
+  function recordHistoryPoint(id, price){
+    if(!priceHistory[id]) priceHistory[id] = [];
+    priceHistory[id].push({ t: Date.now(), p: Number(price) });
+    if(priceHistory[id].length > HISTORY_CAP){
+      priceHistory[id] = priceHistory[id].slice(priceHistory[id].length - HISTORY_CAP);
+    }
+  }
+
+  function persistHistory(){
+    try{ localStorage.setItem(STORE_HISTORY, JSON.stringify(priceHistory)); }
+    catch(e){ console.error('Could not save price history', e); }
+  }
+
+  function seedHistoryFromLastWeek(dataStocks){
+    let seededCount = 0, checkedCount = 0;
+    Object.values(dataStocks).forEach(s => {
+      if(priceHistory[s.stock_id] && priceHistory[s.stock_id].length) return; // already have data, don't overwrite
+      checkedCount++;
+      const lastWeekPrice = extractPriceValue(s.last_week);
+      if(lastWeekPrice !== null){
+        priceHistory[s.stock_id] = [
+          { t: Date.now() - 7 * 86400000, p: lastWeekPrice },
+          { t: Date.now(), p: Number(s.current_price) }
+        ];
+        seededCount++;
+      }
+    });
+    if(checkedCount > 0){
+      if(seededCount > 0){
+        persistHistory();
+        setStatus(settingsStatus, `Got a week of history free from Torn's API for ${seededCount} stock${seededCount > 1 ? 's' : ''} — charts will start with a real trend line instead of a single dot.`, 'ok');
+      }else{
+        setStatus(settingsStatus, "Torn's API didn't return usable last-week data for your key — charts will build from scratch as the app runs.", '');
+      }
+    }
+  }
+
+  function renderSparkline(id){
+    const points = priceHistory[id];
+    if(!points || points.length < 2) return '';
+    const w = 280, h = 46, pad = 3;
+    const prices = points.map(p => p.p);
+    const minP = Math.min(...prices), maxP = Math.max(...prices);
+    const span = maxP - minP || 1;
+    const stepX = (w - pad * 2) / (points.length - 1);
+    const coords = points.map((p, i) => {
+      const x = pad + i * stepX;
+      const y = pad + (h - pad * 2) * (1 - (p.p - minP) / span);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+    const trendUp = prices[prices.length - 1] >= prices[0];
+    const color = trendUp ? 'var(--up)' : 'var(--down)';
+    return `<div class="sparkline-wrap"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" class="sparkline">
+      <polyline points="${coords.join(' ')}" fill="none" style="stroke:${color};" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+    </svg></div>`;
   }
 
   function appendAlertLog(title, body){
@@ -1136,10 +925,11 @@
         stocksCache[s.stock_id] = { name: s.name, acronym: s.acronym, price: s.current_price, benefit: s.benefit || null, totalShares: s.total_shares };
       });
       if(announce) setStatus(keyStatus, `Key works — ${Object.keys(stocksCache).length} stocks loaded.`, 'ok');
+      seedHistoryFromLastWeek(data.stocks);
+      Object.values(data.stocks).forEach(s => recordHistoryPoint(s.stock_id, s.current_price));
+      persistHistory();
       updateRanges();
       persistRanges();
-      recordHistory();
-      persistHistory();
       persistLastPrices();
       lastCheckTime = Date.now();
       updateCheckTimerDisplay();
@@ -1199,11 +989,6 @@
           tags.push(`<span class="armed-tag ${w.armedPctRise ? '' : 'hit-high'}">${w.armedPctRise ? `watching +${w.pctRisePct}% (above $${target})` : `alerted · rose ${w.pctRisePct}%`}</span>`);
         }
       }
-
-      const spark = buildSparkline(s.id);
-      const sparkBlock = spark
-        ? `<div class="spark-wrap">${spark.svg}<div class="spark-meta"><span>$${spark.min.toFixed(2)}</span><span>${spark.points} checks tracked</span><span>$${spark.max.toFixed(2)}</span></div></div>`
-        : `<div class="spark-wrap spark-empty">Graph builds up as this app checks prices — check again soon.</div>`;
 
       const r = ranges[s.id];
       let rangeLine = '';
@@ -1327,15 +1112,13 @@
             </div>
             <div class="price">$${Number(s.price).toFixed(2)}${tickDirection[s.id] === 'up' ? ' <span class="tick-arrow up">↑</span>' : tickDirection[s.id] === 'down' ? ' <span class="tick-arrow down">↓</span>' : ''}</div>
           </div>
-          ${sparkBlock}
+          ${checked ? renderSparkline(s.id) : ''}
           ${rangeLine}
           ${lastVisitLine}
           ${positionLine}
           ${benefitLine}
           ${dividendLine}
-          <details class="card-details">
-            <summary>Alerts &amp; position</summary>
-            <div class="thresh-panel">
+          <div class="thresh-panel">
             <div class="field">
               <label>Notify below</label>
               <input type="number" step="0.01" class="low-input" data-id="${s.id}" value="${low}" placeholder="e.g. 720.00">
@@ -1377,7 +1160,6 @@
             ${tags.length ? `<div class="field" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">${tags.join('')}</div>` : ''}
             ${suggestion}
           </div>
-          </details>
         </div>`;
     }).join('');
 
@@ -1706,10 +1488,10 @@
         }
         stocksCache[s.stock_id] = { name: s.name, acronym: s.acronym, price: s.current_price, benefit: s.benefit || null, totalShares: s.total_shares };
       });
+      Object.values(data.stocks).forEach(s => recordHistoryPoint(s.stock_id, s.current_price));
+      persistHistory();
       updateRanges();
       persistRanges();
-      recordHistory();
-      persistHistory();
       persistLastPrices();
       lastCheckTime = Date.now();
       updateCheckTimerDisplay();
@@ -1781,7 +1563,6 @@
   checkNowBtn.addEventListener('click', checkPrices);
 
   loadPersisted();
-  initCloud();
 
   // ---- PWA: service worker + install prompt ----
   if('serviceWorker' in navigator){
