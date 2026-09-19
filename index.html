@@ -753,7 +753,7 @@
     // Merge in the seed baseline locally too, so a brand-new visitor sees a graph immediately
     // rather than waiting on the round trip to the cloud.
     Object.entries(SEED_HISTORY).forEach(([id, points]) => {
-      if(!priceHistory[id]) priceHistory[id] = [];
+      if(!Array.isArray(priceHistory[id])) priceHistory[id] = [];
       const existingT = new Set(priceHistory[id].map(pt => pt[0]));
       points.forEach(([t, p]) => { if(!existingT.has(t)) priceHistory[id].push([t, p]); });
       priceHistory[id].sort((a, b) => a[0] - b[0]);
@@ -830,7 +830,8 @@
       if(localStorage.getItem(STORE_BACKFILLED)) return; // already done on this browser
     }catch(e){ /* if storage is unavailable, just skip backfill rather than repeat it forever */ return; }
     Object.entries(priceHistory).forEach(([id, arr]) => {
-      arr.forEach(([t, p]) => pushHistoryToCloud(id, t, p));
+      if(!Array.isArray(arr)) return;
+      arr.forEach(pt => { if(Array.isArray(pt) && pt.length === 2) pushHistoryToCloud(id, pt[0], pt[1]); });
     });
     try{ localStorage.setItem(STORE_BACKFILLED, '1'); }catch(e){ /* non-fatal */ }
   }
@@ -886,12 +887,19 @@
   }
 
   // Merge this browser's own locally-observed points with everyone else's cloud points for one stock.
+  // Defensively coerces anything unexpected (not an array, malformed pairs) to empty rather than
+  // throwing, since bad history data should never be able to break the whole app.
+  function asPointArray(x){
+    if(!Array.isArray(x)) return [];
+    return x.filter(pt => Array.isArray(pt) && pt.length === 2 && Number.isFinite(pt[0]) && Number.isFinite(pt[1]));
+  }
+
   function mergedHistoryFor(id){
-    const local = priceHistory[id] || [];
-    const cloud = cloudHistory[id] || [];
+    const local = asPointArray(priceHistory[id]);
+    const cloud = asPointArray(cloudHistory[id]);
     const map = new Map(); // dedupe by timestamp
-    [...local, ...cloud].forEach(([t, p]) => map.set(t, p));
-    const merged = [...map.entries()].sort((a, b) => a[0] - b[0]);
+    local.concat(cloud).forEach(([t, p]) => map.set(t, p));
+    const merged = Array.from(map.entries()).sort((a, b) => a[0] - b[0]);
     return merged.length > CLOUD_MERGE_CAP ? merged.slice(merged.length - CLOUD_MERGE_CAP) : merged;
   }
 
@@ -903,7 +911,7 @@
   function recordHistory(){
     Object.entries(stocksCache).forEach(([id, s]) => {
       const p = Number(s.price);
-      if(!priceHistory[id]) priceHistory[id] = [];
+      if(!Array.isArray(priceHistory[id])) priceHistory[id] = [];
       const arr = priceHistory[id];
       const last = arr[arr.length - 1];
       if(!last || last[1] !== p){
@@ -921,12 +929,12 @@
   }
 
   function buildSparkline(id){
-    const hist = cloudEnabled ? mergedHistoryFor(id) : priceHistory[id];
+    const hist = cloudEnabled ? mergedHistoryFor(id) : asPointArray(priceHistory[id]);
     if(!hist || hist.length < 2) return null;
     const w = 280, h = 32, pad = 2;
     const prices = hist.map(pt => pt[1]);
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
+    const min = Math.min.apply(null, prices);
+    const max = Math.max.apply(null, prices);
     const span = (max - min) || 1;
     const stepX = (w - pad * 2) / (prices.length - 1);
     const xAt = i => pad + i * stepX;
@@ -1148,13 +1156,20 @@
 
   async function refreshStocks(announce){
     if(!apiKey) return;
+    let data;
     try{
       const res = await fetch(`https://api.torn.com/torn/?selections=stocks&key=${encodeURIComponent(apiKey)}`);
-      const data = await res.json();
-      if(data.error){
-        setStatus(keyStatus, `Torn API error: ${data.error.error}`, 'err');
-        return;
-      }
+      data = await res.json();
+    }catch(e){
+      console.error('Torn API request failed', e);
+      setStatus(keyStatus, `Could not reach the Torn API (${(e && e.message) ? e.message : e}). Check your connection.`, 'err');
+      return;
+    }
+    if(data.error){
+      setStatus(keyStatus, `Torn API error: ${data.error.error}`, 'err');
+      return;
+    }
+    try{
       stocksCache = {};
       tickDirection = {};
       Object.values(data.stocks).forEach(s => {
@@ -1178,7 +1193,10 @@
       renderStockList();
       startPolling();
     }catch(e){
-      setStatus(keyStatus, `Could not reach the Torn API (${(e && e.message) ? e.message : e}). Check your connection.`, 'err');
+      // The key worked and data arrived fine — this is a rendering bug, not a connection problem,
+      // so don't tell the user their key/connection is broken. Log it in full for debugging.
+      console.error('Failed to render stock list after a successful Torn API response', e);
+      if(announce) setStatus(keyStatus, `Key works, but the display hit a snag (${(e && e.message) ? e.message : e}). Try refreshing the page.`, 'err');
     }
   }
 
