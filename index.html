@@ -27,6 +27,19 @@
     --mono: 'IBM Plex Mono', 'Courier New', monospace;
     --slab: 'Roboto Slab', Georgia, serif;
   }
+  :root[data-theme="light"]{
+    --bg:#f4efe1;
+    --panel:#ffffff;
+    --panel-2:#efe7d2;
+    --edge:#d9cda3;
+    --gold:#8a6d14;
+    --gold-dim:#a9873a;
+    --bone:#2a2013;
+    --bone-dim:#6e6146;
+    --up:#2f7a4d;
+    --down:#a53f2f;
+  }
+  body{transition:background-color 0.15s ease, color 0.15s ease;}
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
@@ -226,6 +239,11 @@
     color:var(--bone);
     white-space:nowrap;
   }
+  .change-24h{font-family:var(--mono); font-size:11px; margin-left:4px;}
+  .change-24h.up{color:var(--up);}
+  .change-24h.down{color:var(--down);}
+  .change-24h.muted{color:var(--bone-dim); opacity:0.7;}
+
   .tick-arrow{
     font-size:14px;
     font-weight:700;
@@ -449,6 +467,68 @@
   .signal-row .signal-name .acr{color:var(--gold-dim); font-weight:400; font-size:11px;}
   .signal-row .signal-text{color:var(--bone-dim); margin-left:auto;}
 
+  .income-box:empty, .buy-next-box:empty{margin:0;}
+  .income-box{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .income-stat{
+    flex:1;
+    min-width:120px;
+    background:var(--panel-2);
+    border:1px solid var(--edge);
+    border-radius:4px;
+    padding:10px 12px;
+  }
+  .income-stat .label{font-family:var(--mono); font-size:10.5px; color:var(--bone-dim); text-transform:uppercase; letter-spacing:0.04em;}
+  .income-stat .value{font-family:var(--slab); font-weight:700; font-size:18px; color:var(--gold);}
+  .income-note{font-family:var(--mono); font-size:11px; color:var(--bone-dim); flex-basis:100%; margin-top:2px;}
+
+  .buy-next-box{margin-bottom:16px;}
+  .buy-next-box h3, .bank-box h3{
+    font-family:var(--slab);
+    font-size:14px;
+    color:var(--gold-dim);
+    margin:0 0 8px;
+  }
+  .buy-next-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    background:var(--panel-2);
+    border:1px solid var(--edge);
+    border-left:3px solid var(--gold);
+    border-radius:4px;
+    padding:9px 12px;
+    margin-bottom:6px;
+    font-family:var(--mono);
+    font-size:12px;
+  }
+  .buy-next-row .rank{color:var(--gold); font-weight:700; width:18px; flex:none;}
+  .buy-next-row .bn-name{color:var(--bone); font-family:var(--slab); font-weight:700; font-size:13px;}
+  .buy-next-row .bn-name .acr{color:var(--gold-dim); font-weight:400; font-size:11px;}
+  .buy-next-row .bn-detail{color:var(--bone-dim); margin-left:auto;}
+  .buy-next-row .bn-roi{color:var(--up); font-weight:700;}
+
+  .bank-box{
+    margin-bottom:16px;
+    background:var(--panel-2);
+    border:1px solid var(--edge);
+    border-radius:4px;
+    padding:12px 14px;
+  }
+  .bank-box .card-details summary{font-size:13.5px;}
+  .bank-table{width:100%; border-collapse:collapse; font-family:var(--mono); font-size:12px; margin-top:8px;}
+  .bank-table th{text-align:left; color:var(--bone-dim); font-weight:400; padding:4px 8px; border-bottom:1px solid var(--edge); font-size:10.5px; text-transform:uppercase; letter-spacing:0.04em;}
+  .bank-table td{padding:5px 8px; border-bottom:1px solid var(--edge);}
+  .bank-table tr.best td{color:var(--up); font-weight:700;}
+  .bank-deposit-row{display:flex; gap:10px; align-items:flex-end; margin-bottom:4px; flex-wrap:wrap;}
+  .bank-deposit-row .field{flex:none; width:180px;}
+
+
   .empty{
     color:var(--bone-dim);
     font-size:13.5px;
@@ -541,6 +621,31 @@
         </select>
       </div>
     </div>
+    <div class="row" style="gap:16px; align-items:flex-end; margin-top:14px;">
+      <div style="flex:none;">
+        <label for="sortMode">Sort by
+          <details class="help">
+            <summary>?</summary>
+            <div class="help-body">How the stock list is ordered. "Biggest movers" ranks by the largest % change since your last visit; "Closest to alert" ranks watched stocks by how near they are to a threshold you've set.</div>
+          </details>
+        </label>
+        <select id="sortMode">
+          <option value="name" selected>Name (A–Z)</option>
+          <option value="pctChange">Biggest movers</option>
+          <option value="distance">Closest to alert</option>
+        </select>
+      </div>
+      <div style="flex:none;">
+        <button class="ghost" id="compactToggleBtn">Compact numbers: Off</button>
+        <details class="help">
+          <summary>?</summary>
+          <div class="help-body">Shows large totals (worth, profit/loss, share counts) in short form, like $1.2M instead of $1,196,000. Per-share prices are never shortened.</div>
+        </details>
+      </div>
+      <div style="flex:none;">
+        <button class="ghost" id="themeToggleBtn">Theme: Dark</button>
+      </div>
+    </div>
     <div class="row" style="gap:10px;">
       <button class="ghost" id="notifBtn">Enable notifications</button>
       <details class="help">
@@ -595,6 +700,14 @@
     </div>
     <div id="checkTimerStatus" class="status-line"></div>
     <div id="signalsBox" class="signals-box"></div>
+    <div id="incomeSummaryBox" class="income-box"></div>
+    <div id="buyNextBox" class="buy-next-box"></div>
+    <div class="bank-box" id="bankBox">
+      <details class="card-details" open>
+        <summary>Bank interest comparator</summary>
+        <div id="bankBoxBody"></div>
+      </details>
+    </div>
     <div id="portfolioSummary" class="status-line" style="margin-bottom:10px;"></div>
     <div id="stockList"><div class="empty">Connect your API key above to load the stock list.</div></div>
     <div class="status-line" id="pollStatus"></div>
@@ -671,12 +784,44 @@
     toggleKeyBtn.setAttribute('aria-label', toggleKeyBtn.title);
   });
   const keyStatus = $('keyStatus');
+  const sortModeSel = $('sortMode');
+  const compactToggleBtn = $('compactToggleBtn');
+  const themeToggleBtn = $('themeToggleBtn');
+
+  function applyTheme(){
+    document.documentElement.setAttribute('data-theme', theme);
+    if(themeToggleBtn) themeToggleBtn.textContent = `Theme: ${theme === 'light' ? 'Light' : 'Dark'}`;
+  }
+  function applyCompactToggleLabel(){
+    if(compactToggleBtn) compactToggleBtn.textContent = `Compact numbers: ${compactNumbers ? 'On' : 'Off'}`;
+  }
+
+  sortModeSel.addEventListener('change', () => {
+    sortMode = sortModeSel.value;
+    try{ localStorage.setItem(STORE_SORT, sortMode); }catch(e){ /* non-fatal */ }
+    renderStockList();
+  });
+  compactToggleBtn.addEventListener('click', () => {
+    compactNumbers = !compactNumbers;
+    try{ localStorage.setItem(STORE_COMPACT, compactNumbers ? '1' : '0'); }catch(e){ /* non-fatal */ }
+    applyCompactToggleLabel();
+    renderStockList();
+  });
+  themeToggleBtn.addEventListener('click', () => {
+    theme = theme === 'light' ? 'dark' : 'light';
+    try{ localStorage.setItem(STORE_THEME, theme); }catch(e){ /* non-fatal */ }
+    applyTheme();
+  });
+
   const notifBtn = $('notifBtn');
   const stockFilter = $('stockFilter');
   const watchedOnlyToggle = $('watchedOnlyToggle');
   const stockList = $('stockList');
   const portfolioSummary = $('portfolioSummary');
   const signalsBox = $('signalsBox');
+  const incomeSummaryBox = $('incomeSummaryBox');
+  const buyNextBox = $('buyNextBox');
+  const bankBoxBody = $('bankBoxBody');
   const budgetInput = $('budgetInput');
   const pollStatus = $('pollStatus');
   const pollIntervalSel = $('pollInterval');
@@ -700,6 +845,9 @@
   const settingsStatus = $('settingsStatus');
 
   let apiKey = '';
+  let compactNumbers = false; // display pref: e.g. $1.2M instead of $1,196,000
+  let sortMode = 'default';   // display pref: 'default' | 'pctChange' | 'name' | 'distance'
+  let theme = 'dark';         // display pref: 'dark' (default) | 'light'
   let stocksCache = {};      // id -> {name, acronym, price}
   let watches = {};          // id -> {name, acronym, low, high, armedHigh, armedLow}
   let ranges = {};           // id -> {high, low}  (observed since tracking started)
@@ -711,6 +859,9 @@
   const STORE_KEY = 'torn-stock-key';
   const STORE_WATCHES = 'torn-stock-watches';
   const STORE_RANGES = 'torn-stock-ranges';
+  const STORE_COMPACT = 'torn-stock-compact-numbers';
+  const STORE_SORT = 'torn-stock-sort-mode';
+  const STORE_THEME = 'torn-stock-theme';
   const STORE_HISTORY = 'torn-stock-history';
   const HISTORY_CAP = 300; // max points kept per stock, oldest dropped first
   const STORE_BUDGET = 'torn-stock-budget';
@@ -734,6 +885,21 @@
       const k = localStorage.getItem(STORE_KEY);
       if(k){ apiKey = k; keyInput.value = apiKey; }
     }catch(e){ /* storage unavailable */ }
+    try{
+      const cn = localStorage.getItem(STORE_COMPACT);
+      if(cn) compactNumbers = cn === '1';
+    }catch(e){ /* default: off */ }
+    try{
+      const sm = localStorage.getItem(STORE_SORT);
+      if(sm) sortMode = sm;
+    }catch(e){ /* default: name */ }
+    try{
+      const th = localStorage.getItem(STORE_THEME);
+      if(th) theme = th;
+    }catch(e){ /* default: dark */ }
+    applyTheme();
+    applyCompactToggleLabel();
+    if(sortModeSel) sortModeSel.value = sortMode;
     try{
       const w = localStorage.getItem(STORE_WATCHES);
       if(w){ watches = JSON.parse(w); }
@@ -894,6 +1060,24 @@
     return x.filter(pt => Array.isArray(pt) && pt.length === 2 && Number.isFinite(pt[0]) && Number.isFinite(pt[1]));
   }
 
+  function fmtMoney(n){
+    n = Number(n);
+    if(!Number.isFinite(n)) return String(n);
+    if(compactNumbers){
+      return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 2 }).format(n);
+    }
+    return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  }
+
+  function fmtNum(n){
+    n = Number(n);
+    if(!Number.isFinite(n)) return String(n);
+    if(compactNumbers){
+      return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(n);
+    }
+    return n.toLocaleString();
+  }
+
   function mergedHistoryFor(id){
     const local = asPointArray(priceHistory[id]);
     const cloud = asPointArray(cloudHistory[id]);
@@ -926,6 +1110,24 @@
   function persistHistory(){
     try{ localStorage.setItem(STORE_HISTORY, JSON.stringify(priceHistory)); }
     catch(e){ console.error('Could not save price history', e); }
+  }
+
+  // Rough 24h % change using whatever price history is available (own + shared). Returns null
+  // when there's no point old enough yet to compare against.
+  function pctChange24h(id, currentPrice){
+    const hist = cloudEnabled ? mergedHistoryFor(id) : asPointArray(priceHistory[id]);
+    if(!hist || hist.length < 2) return null;
+    const cutoff = Date.now() - 24 * 3600 * 1000;
+    // find the point closest to (but not after) 24h ago; if the oldest point is newer than
+    // that, there's not enough history yet to answer this.
+    if(hist[0][0] > cutoff) return null;
+    let ref = hist[0];
+    for(const pt of hist){
+      if(pt[0] > cutoff) break;
+      ref = pt;
+    }
+    if(!ref || !ref[1]) return null;
+    return ((currentPrice - ref[1]) / ref[1]) * 100;
   }
 
   function buildSparkline(id){
@@ -1154,11 +1356,13 @@
     });
   }
 
+  let bankRates = null; // { "1w":.., "2w":.., "1m":.., "2m":.., "3m":.. } — % return for that term, straight from Torn
+
   async function refreshStocks(announce){
     if(!apiKey) return;
     let data;
     try{
-      const res = await fetch(`https://api.torn.com/torn/?selections=stocks&key=${encodeURIComponent(apiKey)}`);
+      const res = await fetch(`https://api.torn.com/torn/?selections=stocks,bank&key=${encodeURIComponent(apiKey)}`);
       data = await res.json();
     }catch(e){
       console.error('Torn API request failed', e);
@@ -1210,14 +1414,60 @@
     tapeTrack.innerHTML = half + half; // duplicate for seamless loop
   }
 
+  // Torn's benefit description text sometimes includes a cash figure (e.g. "$992,853 -/day"),
+  // but the exact format isn't guaranteed, so this is offered only as a starting guess —
+  // the user can always override it with what they actually see in-game.
+  function guessPayoutFromDescription(text){
+    if(!text) return null;
+    const m = String(text).match(/\$([\d,]+(?:\.\d+)?)/);
+    if(!m) return null;
+    const n = parseFloat(m[1].replace(/,/g, ''));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+
+  function distanceToAlert(s, w){
+    if(!w) return Infinity;
+    const price = Number(s.price);
+    const dists = [];
+    if(w.high !== null && w.high !== undefined && w.armedHigh) dists.push(Math.abs(Number(w.high) - price));
+    if(w.low !== null && w.low !== undefined && w.armedLow) dists.push(Math.abs(Number(w.low) - price));
+    if(w.pctDropPct && w.armedPctDrop){
+      const target = w.pctDropBase * (1 - w.pctDropPct / 100);
+      dists.push(Math.abs(target - price));
+    }
+    if(w.pctRisePct && w.armedPctRise){
+      const target = w.pctRiseBase * (1 + w.pctRisePct / 100);
+      dists.push(Math.abs(target - price));
+    }
+    return dists.length ? Math.min(...dists) / price : Infinity; // as a fraction of price, so stocks at different price scales compare fairly
+  }
+
+  function sortStocks(list){
+    if(sortMode === 'pctChange'){
+      return list.slice().sort((a, b) => {
+        const pctFor = s => {
+          const prev = prevVisitPrices[s.id];
+          if(prev === undefined || !Number(prev)) return 0;
+          return Math.abs((Number(s.price) - Number(prev)) / Number(prev));
+        };
+        return pctFor(b) - pctFor(a);
+      });
+    }
+    if(sortMode === 'distance'){
+      return list.slice().sort((a, b) => distanceToAlert(a, watches[a.id]) - distanceToAlert(b, watches[b.id]));
+    }
+    return list.slice().sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   function renderStockList(){
     const term = stockFilter.value.trim().toLowerCase();
     const watchedOnly = watchedOnlyToggle.checked;
-    const all = Object.entries(stocksCache)
-      .map(([id, s]) => ({ id, ...s }))
-      .filter(s => !term || s.name.toLowerCase().includes(term) || s.acronym.toLowerCase().includes(term))
-      .filter(s => !watchedOnly || !!watches[s.id])
-      .sort((a,b) => a.name.localeCompare(b.name));
+    const all = sortStocks(
+      Object.entries(stocksCache)
+        .map(([id, s]) => ({ id, ...s }))
+        .filter(s => !term || s.name.toLowerCase().includes(term) || s.acronym.toLowerCase().includes(term))
+        .filter(s => !watchedOnly || !!watches[s.id])
+    );
 
     if(!all.length){
       const msg = watchedOnly && Object.keys(stocksCache).length
@@ -1283,19 +1533,19 @@
         if(checked && isNewLow){
           signalsSummary.push({ type:'buy', name:s.name, acronym:s.acronym, text:`Just hit a new session low ($${price.toFixed(2)})` });
         }else if(checked && isNewHigh && w.owned > 0){
-          signalsSummary.push({ type:'sell', name:s.name, acronym:s.acronym, text:`Just hit a new session high ($${price.toFixed(2)}), you hold ${w.owned.toLocaleString()} shares` });
+          signalsSummary.push({ type:'sell', name:s.name, acronym:s.acronym, text:`Just hit a new session high ($${price.toFixed(2)}), you hold ${fmtNum(w.owned)} shares` });
         }
 
         if(checked && sig.cls === 'buy' && budget && budget > 0){
           const shares = Math.floor(budget / price);
           if(shares > 0){
-            suggestion = `<div class="suggestion-line">Price is low in its recent range. At your $${budget.toLocaleString()} budget, that's <span class="amt">${shares.toLocaleString()} shares</span> (~$${(shares*price).toLocaleString(undefined,{maximumFractionDigits:2})}).</div>`;
-            signalsSummary.push({ type:'buy', name:s.name, acronym:s.acronym, text:`${shares.toLocaleString()} shares (~$${(shares*price).toLocaleString(undefined,{maximumFractionDigits:2})})` });
+            suggestion = `<div class="suggestion-line">Price is low in its recent range. At your $${fmtNum(budget)} budget, that's <span class="amt">${fmtNum(shares)} shares</span> (~$${fmtMoney((shares*price))}).</div>`;
+            signalsSummary.push({ type:'buy', name:s.name, acronym:s.acronym, text:`${fmtNum(shares)} shares (~$${fmtMoney((shares*price))})` });
           }
         }else if(checked && sig.cls === 'high' && w.owned > 0){
           const proceeds = w.owned * price;
-          suggestion = `<div class="suggestion-line">You hold ${w.owned.toLocaleString()} shares and price is high in its recent range — one point to consider taking some profit, if that fits your plan. Selling all now would be worth ~$${proceeds.toLocaleString(undefined,{maximumFractionDigits:2})}.</div>`;
-          signalsSummary.push({ type:'sell', name:s.name, acronym:s.acronym, text:`${w.owned.toLocaleString()} shares worth ~$${proceeds.toLocaleString(undefined,{maximumFractionDigits:2})}` });
+          suggestion = `<div class="suggestion-line">You hold ${fmtNum(w.owned)} shares and price is high in its recent range — one point to consider taking some profit, if that fits your plan. Selling all now would be worth ~$${fmtMoney(proceeds)}.</div>`;
+          signalsSummary.push({ type:'sell', name:s.name, acronym:s.acronym, text:`${fmtNum(w.owned)} shares worth ~$${fmtMoney(proceeds)}` });
         }else if(checked && sig.cls === 'high'){
           suggestion = `<div class="suggestion-line">Price is high in its recent range — this isn't a signal to buy right now.</div>`;
         }
@@ -1307,7 +1557,7 @@
         const have = w && w.owned ? w.owned : 0;
         const freqDays = s.benefit.frequency || null;
         const price = Number(s.price);
-        const costOf = (shares) => `~$${(shares * price).toLocaleString(undefined,{maximumFractionDigits:2})}`;
+        const costOf = (shares) => `~$${fmtMoney((shares * price))}`;
 
         if(s.benefit.type === 'active'){
           const ownedBBs = Math.floor(have / bbSize);
@@ -1316,10 +1566,10 @@
           if(increment > 0){
             const nextNeededBBs = Math.pow(2, increment + 1) - 1;
             const nextNeededShares = (nextNeededBBs * bbSize) - have;
-            benefitLine = `<div class="benefit-line"><span class="met">✓ ${increment} increment${increment > 1 ? 's' : ''} active:</span> ${s.benefit.description}${freqText} — <span class="need">${nextNeededShares.toLocaleString()} more shares (${costOf(nextNeededShares)}) for the next increment</span></div>`;
+            benefitLine = `<div class="benefit-line"><span class="met">✓ ${increment} increment${increment > 1 ? 's' : ''} active:</span> ${s.benefit.description}${freqText} — <span class="need">${fmtNum(nextNeededShares)} more shares (${costOf(nextNeededShares)}) for the next increment</span></div>`;
           }else{
             const gap = bbSize - have;
-            benefitLine = `<div class="benefit-line">First increment at ${bbSize.toLocaleString()} shares: ${s.benefit.description}${freqText} — <span class="need">${gap.toLocaleString()} more shares (${costOf(gap)}) needed</span></div>`;
+            benefitLine = `<div class="benefit-line">First increment at ${fmtNum(bbSize)} shares: ${s.benefit.description}${freqText} — <span class="need">${fmtNum(gap)} more shares (${costOf(gap)}) needed</span></div>`;
           }
         }else{
           // passive: single unlock, activates after holding bbSize shares for 7 days
@@ -1327,7 +1577,7 @@
             benefitLine = `<div class="benefit-line"><span class="met">✓ Unlocked</span> (after 7 days holding): ${s.benefit.description}</div>`;
           }else{
             const gap = bbSize - have;
-            benefitLine = `<div class="benefit-line">Unlocks at ${bbSize.toLocaleString()} shares, held 7 days: ${s.benefit.description} — <span class="need">${gap.toLocaleString()} more shares (${costOf(gap)}) needed</span></div>`;
+            benefitLine = `<div class="benefit-line">Unlocks at ${fmtNum(bbSize)} shares, held 7 days: ${s.benefit.description} — <span class="need">${fmtNum(gap)} more shares (${costOf(gap)}) needed</span></div>`;
           }
         }
       }
@@ -1356,23 +1606,28 @@
           const plPct = (pl / boughtTotal) * 100;
           const cls = pl >= 0 ? 'up' : 'down';
           positionLine = `<div class="position-line">
-            <span class="position-then">Bought: ${w.owned.toLocaleString()} sh @ $${w.avgBuyPrice.toFixed(2)} = $${boughtTotal.toLocaleString(undefined,{maximumFractionDigits:2})}</span>
-            <span class="position-now">Now: ${w.owned.toLocaleString()} sh @ $${price.toFixed(2)} = $${nowTotal.toLocaleString(undefined,{maximumFractionDigits:2})}</span>
-            <span class="position-pl" style="color:var(--${cls});">${pl >= 0 ? '+' : ''}$${pl.toLocaleString(undefined,{maximumFractionDigits:2})} (${plPct >= 0 ? '+' : ''}${plPct.toFixed(1)}%)</span>
+            <span class="position-then">Bought: ${fmtNum(w.owned)} sh @ $${w.avgBuyPrice.toFixed(2)} = $${fmtMoney(boughtTotal)}</span>
+            <span class="position-now">Now: ${fmtNum(w.owned)} sh @ $${price.toFixed(2)} = $${fmtMoney(nowTotal)}</span>
+            <span class="position-pl" style="color:var(--${cls});">${pl >= 0 ? '+' : ''}$${fmtMoney(pl)} (${plPct >= 0 ? '+' : ''}${plPct.toFixed(1)}%)</span>
           </div>`;
         }else{
           positionLine = `<div class="position-line">
-            <span class="position-now">You hold ${w.owned.toLocaleString()} shares, worth $${nowTotal.toLocaleString(undefined,{maximumFractionDigits:2})} now — add "Your avg buy price" below to see profit/loss.</span>
+            <span class="position-now">You hold ${fmtNum(w.owned)} shares, worth $${fmtMoney(nowTotal)} now — add "Your avg buy price" below to see profit/loss.</span>
           </div>`;
         }
       }
+
+      const change24h = pctChange24h(s.id, Number(s.price));
+      const change24hHtml = change24h === null
+        ? `<span class="change-24h muted" title="Not enough tracked history yet for a 24h comparison">24h: —</span>`
+        : `<span class="change-24h ${change24h >= 0 ? 'up' : 'down'}">24h: ${change24h >= 0 ? '+' : ''}${change24h.toFixed(1)}%</span>`;
 
       return `
         <div class="stock-card ${checked ? 'checked' : ''}" data-id="${s.id}">
           <div class="stock-top">
             <input type="checkbox" class="watch-toggle" data-id="${s.id}" ${checked ? 'checked' : ''}>
             <div class="stock-id-block">
-              <span class="name">${s.name}</span><span class="acr">${s.acronym}</span>
+              <span class="name">${s.name}</span><span class="acr">${s.acronym}</span> ${change24hHtml}
             </div>
             <div class="price">$${Number(s.price).toFixed(2)}${tickDirection[s.id] === 'up' ? ' <span class="tick-arrow up">↑</span>' : tickDirection[s.id] === 'down' ? ' <span class="tick-arrow down">↓</span>' : ''}</div>
           </div>
@@ -1413,14 +1668,23 @@
             <div class="field">
               <label>Last collected</label>
               <input type="date" class="lastcollected-input" data-id="${s.id}" value="${w && w.lastCollected ? w.lastCollected : ''}">
+            </div>
+            <div class="field">
+              <label>Payout per increment ($)
+                <details class="help">
+                  <summary>?</summary>
+                  <div class="help-body">How much cash one increment of this benefit pays out, per payout. We try to guess this from Torn's own description text, but it's not guaranteed — check in-game and correct it if needed. This feeds the income summary and "what to buy next" ranking above the stock list.</div>
+                </details>
+              </label>
+              <input type="number" step="1" class="payout-input" data-id="${s.id}" value="${w && w.payoutAmount ? w.payoutAmount : ''}" placeholder="${guessPayoutFromDescription(s.benefit.description) || 'e.g. 992853'}">
             </div>` : ''}
             ${w && w.owned ? `<div class="field" style="display:flex; align-items:flex-end; gap:6px; flex-wrap:wrap;">
-              <span class="armed-tag" style="border-color:var(--gold-dim); color:var(--gold-dim);">worth $${(w.owned * Number(s.price)).toLocaleString(undefined,{maximumFractionDigits:2})}</span>
+              <span class="armed-tag" style="border-color:var(--gold-dim); color:var(--gold-dim);">worth $${fmtMoney(w.owned * Number(s.price))}</span>
               ${w.avgBuyPrice ? (() => {
                 const pl = (Number(s.price) - w.avgBuyPrice) * w.owned;
                 const plPct = ((Number(s.price) - w.avgBuyPrice) / w.avgBuyPrice) * 100;
                 const cls = pl >= 0 ? 'up' : 'down';
-                return `<span class="armed-tag" style="border-color:var(--${cls}); color:var(--${cls});">${pl >= 0 ? '+' : ''}$${pl.toLocaleString(undefined,{maximumFractionDigits:2})} (${plPct >= 0 ? '+' : ''}${plPct.toFixed(1)}%)</span>`;
+                return `<span class="armed-tag" style="border-color:var(--${cls}); color:var(--${cls});">${pl >= 0 ? '+' : ''}$${fmtMoney(pl)} (${plPct >= 0 ? '+' : ''}${plPct.toFixed(1)}%)</span>`;
               })() : ''}
             </div>` : ''}
             ${tags.length ? `<div class="field" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">${tags.join('')}</div>` : ''}
@@ -1444,7 +1708,7 @@
       });
     });
 
-    stockList.querySelectorAll('.low-input, .high-input, .owned-input, .pct-drop-input, .pct-rise-input, .avgbuy-input, .lastcollected-input').forEach(inp => {
+    stockList.querySelectorAll('.low-input, .high-input, .owned-input, .pct-drop-input, .pct-rise-input, .avgbuy-input, .lastcollected-input, .payout-input').forEach(inp => {
       inp.addEventListener('change', () => {
         const id = inp.dataset.id;
         const w = watches[id];
@@ -1465,6 +1729,8 @@
         }else if(inp.classList.contains('lastcollected-input')){
           w.lastCollected = inp.value === '' ? null : inp.value;
           w.dividendNotified = false;
+        }else if(inp.classList.contains('payout-input')){
+          w.payoutAmount = inp.value === '' ? null : parseFloat(inp.value);
         }else{
           w.owned = inp.value === '' ? 0 : parseFloat(inp.value);
         }
@@ -1475,6 +1741,9 @@
 
     renderPortfolioSummary();
     renderSignalsSummary(signalsSummary);
+    renderIncomeSummary();
+    renderBuyNextRanking();
+    renderBankBox();
   }
 
   function renderPortfolioSummary(){
@@ -1495,9 +1764,9 @@
         return sum + ((price - w.avgBuyPrice) * w.owned);
       }, 0);
       const sign = totalPL >= 0 ? '+' : '';
-      plText = ` · ${sign}$${totalPL.toLocaleString(undefined,{maximumFractionDigits:2})} unrealized ${totalPL >= 0 ? 'profit' : 'loss'} on ${withCostBasis.length} priced stock${withCostBasis.length > 1 ? 's' : ''}`;
+      plText = ` · ${sign}$${fmtMoney(totalPL)} unrealized ${totalPL >= 0 ? 'profit' : 'loss'} on ${withCostBasis.length} priced stock${withCostBasis.length > 1 ? 's' : ''}`;
     }
-    portfolioSummary.textContent = `Portfolio: ${held.length} stock${held.length > 1 ? 's' : ''} held, worth $${total.toLocaleString(undefined,{maximumFractionDigits:2})} at current prices${plText}.`;
+    portfolioSummary.textContent = `Portfolio: ${held.length} stock${held.length > 1 ? 's' : ''} held, worth $${fmtMoney(total)} at current prices${plText}.`;
   }
 
   function renderSignalsSummary(signals){
@@ -1515,6 +1784,122 @@
         <span class="signal-name">${sig.name} <span class="acr">${sig.acronym}</span></span>
         <span class="signal-text">${sig.text}</span>
       </div>`).join('');
+  }
+
+  function activeBenefitInfo(s, w){
+    if(!s.benefit || s.benefit.type !== 'active' || !s.benefit.requirement) return null;
+    const bbSize = s.benefit.requirement;
+    const have = w && w.owned ? w.owned : 0;
+    const ownedBBs = Math.floor(have / bbSize);
+    const increment = ownedBBs > 0 ? Math.floor(Math.log2(ownedBBs + 1)) : 0;
+    const freqDays = s.benefit.frequency || null;
+    const payoutPerIncrement = (w && w.payoutAmount) ? Number(w.payoutAmount) : guessPayoutFromDescription(s.benefit.description);
+    return { bbSize, have, increment, freqDays, payoutPerIncrement, guessed: !(w && w.payoutAmount) };
+  }
+
+  function dailyIncomeFor(s, w){
+    const info = activeBenefitInfo(s, w);
+    if(!info || !info.increment || !info.freqDays || !info.payoutPerIncrement) return 0;
+    return (info.payoutPerIncrement * info.increment) / info.freqDays;
+  }
+
+  function renderIncomeSummary(){
+    const held = Object.entries(watches).filter(([id, w]) => w.owned > 0);
+    let dailyTotal = 0, contributing = 0;
+    held.forEach(([id, w]) => {
+      const s = stocksCache[id];
+      if(!s) return;
+      const daily = dailyIncomeFor(s, w);
+      if(daily > 0){ dailyTotal += daily; contributing++; }
+    });
+    if(dailyTotal <= 0){
+      incomeSummaryBox.innerHTML = '';
+      return;
+    }
+    const stats = [['Daily', dailyTotal], ['Weekly', dailyTotal * 7], ['Monthly', dailyTotal * 30], ['Annual', dailyTotal * 365]];
+    incomeSummaryBox.innerHTML = stats.map(([label, val]) => `
+      <div class="income-stat"><div class="label">${label} income</div><div class="value">$${fmtMoney(val)}</div></div>
+    `).join('') + `<div class="income-note">Estimated from ${contributing} active-dividend stock${contributing > 1 ? 's' : ''} you hold. Passive perks (non-cash) aren't counted here — see each stock's benefit line for those.</div>`;
+  }
+
+  function renderBuyNextRanking(){
+    const candidates = [];
+    Object.entries(stocksCache).forEach(([id, s]) => {
+      if(!s.benefit || s.benefit.type !== 'active' || !s.benefit.requirement || !s.benefit.frequency) return;
+      const w = watches[id];
+      const payout = (w && w.payoutAmount) ? Number(w.payoutAmount) : guessPayoutFromDescription(s.benefit.description);
+      if(!payout) return;
+      const bbSize = s.benefit.requirement;
+      const price = Number(s.price);
+      const cost = bbSize * price;
+      const dailyIncome = payout / s.benefit.frequency;
+      if(!cost || !dailyIncome) return;
+      candidates.push({ id, s, cost, dailyIncome, roiPctPerDay: (dailyIncome / cost) * 100, guessed: !(w && w.payoutAmount) });
+    });
+    candidates.sort((a, b) => b.roiPctPerDay - a.roiPctPerDay);
+    const top = candidates.slice(0, 5);
+    if(!top.length){
+      buyNextBox.innerHTML = '';
+      return;
+    }
+    buyNextBox.innerHTML = `<h3>What should I buy next?</h3>` + top.map((c, i) => `
+      <div class="buy-next-row">
+        <span class="rank">#${i + 1}</span>
+        <span class="bn-name">${c.s.name} <span class="acr">${c.s.acronym}</span></span>
+        <span class="bn-roi">${c.roiPctPerDay.toFixed(3)}%/day</span>
+        <span class="bn-detail">First increment ~$${fmtMoney(c.cost)} → ~$${fmtMoney(c.dailyIncome)}/day${c.guessed ? ' (guessed payout — verify in-game)' : ''}</span>
+      </div>`).join('') + `<div class="income-note">Ranked by estimated daily cash return on the cost of one benefit increment. Only stocks with a detected or entered payout amount show up here — open a stock's "Alerts & position" panel to add or correct one. Passive (non-cash) perks aren't rankable this way and are left out.</div>`;
+  }
+
+  function renderBankBox(){
+    const existingInput = $('bankDepositInput');
+    const deposit = existingInput && existingInput.value ? Number(existingInput.value) : null;
+    if(!bankRates){
+      bankBoxBody.innerHTML = `<div class="empty">Connect your API key to load current bank rates from Torn.</div>`;
+      return;
+    }
+    const terms = [
+      { key: '1w', label: '1 week', days: 7 },
+      { key: '2w', label: '2 weeks', days: 14 },
+      { key: '1m', label: '1 month', days: 30 },
+      { key: '2m', label: '2 months', days: 60 },
+      { key: '3m', label: '3 months', days: 90 },
+    ];
+    const rows = terms.map(t => {
+      const raw = bankRates[t.key];
+      if(raw === undefined || raw === null) return null;
+      const termPct = Number(raw);
+      const apr = termPct * (365 / t.days);
+      const payout = deposit ? deposit * (termPct / 100) : null;
+      return Object.assign({}, t, { termPct, apr, payout });
+    }).filter(Boolean);
+    if(!rows.length){
+      bankBoxBody.innerHTML = `<div class="empty">No bank rate data in the last response.</div>`;
+      return;
+    }
+    const bestApr = Math.max.apply(null, rows.map(r => r.apr));
+    bankBoxBody.innerHTML = `
+      <div class="bank-deposit-row">
+        <div class="field">
+          <label for="bankDepositInput">Deposit amount ($)</label>
+          <input type="number" id="bankDepositInput" placeholder="e.g. 10000000" value="${deposit || ''}">
+        </div>
+      </div>
+      <table class="bank-table">
+        <thead><tr><th>Term</th><th>Return for term</th><th>Annualized (APR)</th>${deposit ? '<th>Payout on deposit</th>' : ''}</tr></thead>
+        <tbody>
+          ${rows.map(r => `<tr class="${r.apr === bestApr ? 'best' : ''}">
+            <td>${r.label}</td>
+            <td>${r.termPct.toFixed(2)}%</td>
+            <td>${r.apr.toFixed(1)}%</td>
+            ${deposit ? `<td>$${fmtMoney(r.payout)}</td>` : ''}
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="income-note">Rates pulled live from Torn's own bank API. "Annualized" just scales the term return out to a year for easy comparison — actual return depends on re-depositing at the same rate each time the term ends, and rates can change.</div>
+    `;
+    const newInput = $('bankDepositInput');
+    if(newInput) newInput.addEventListener('change', renderBankBox);
   }
 
   async function syncHoldings(){
@@ -1741,7 +2126,7 @@
   async function checkPrices(){
     if(!apiKey){ return; }
     try{
-      const res = await fetch(`https://api.torn.com/torn/?selections=stocks&key=${encodeURIComponent(apiKey)}`);
+      const res = await fetch(`https://api.torn.com/torn/?selections=stocks,bank&key=${encodeURIComponent(apiKey)}`);
       const data = await res.json();
       if(data.error){ setStatus(pollStatus, `Torn API error: ${data.error.error}`, 'err'); return; }
       tickDirection = {};
@@ -1755,6 +2140,7 @@
         }
         stocksCache[s.stock_id] = { name: s.name, acronym: s.acronym, price: s.current_price, benefit: s.benefit || null, totalShares: s.total_shares };
       });
+      if(data.bank){ bankRates = data.bank; }
       updateRanges();
       persistRanges();
       recordHistory();
