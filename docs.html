@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docs & Terms — Torn Stock Alerts</title>
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0e14;
+    --panel:#131720;
+    --panel-2:#171c28;
+    --edge:#262c3a;
+    --gold:#4f8ef7;
+    --gold-dim:#7ba7f0;
+    --bone:#e7eaf1;
+    --bone-dim:#8b93a7;
+    --up:#3ecf8e;
+    --down:#f0576b;
+    --mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --slab: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--bone);
+    font-family:var(--slab);
+    min-height:100vh;
+  }
+  a{color:var(--gold-dim);}
+  code, .mono{font-family:var(--mono);}
+  code{
+    background:var(--panel-2);
+    border:1px solid var(--edge);
+    border-radius:6px;
+    padding:2px 6px;
+    font-size:0.92em;
+  }
+  pre{
+    background:var(--panel-2);
+    border:1px solid var(--edge);
+    border-radius:12px;
+    padding:14px 16px;
+    overflow-x:auto;
+    font-family:var(--mono);
+    font-size:13px;
+    line-height:1.6;
+  }
+
+  .top-bar{
+    position:sticky;
+    top:0;
+    z-index:100;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px 18px;
+    background:var(--panel);
+    border-bottom:1px solid var(--edge);
+  }
+  .top-bar-brand{font-weight:800; font-size:15px; letter-spacing:-0.01em;}
+  .top-bar a.back{
+    font-size:13px;
+    color:var(--bone-dim);
+    text-decoration:none;
+    border:1px solid var(--edge);
+    padding:7px 14px;
+    border-radius:999px;
+  }
+  .top-bar a.back:hover{color:var(--bone); border-color:var(--gold-dim);}
+
+  .wrap{max-width:760px; margin:0 auto; padding:32px 20px 80px;}
+
+  header.page-head h1{
+    font-size:28px;
+    font-weight:800;
+    letter-spacing:-0.01em;
+    margin:0 0 8px;
+  }
+  header.page-head p{
+    color:var(--bone-dim);
+    font-size:14.5px;
+    line-height:1.6;
+    margin:0;
+    max-width:60ch;
+  }
+
+  nav.tabs{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin:24px 0 32px;
+    position:sticky;
+    top:57px;
+    background:var(--bg);
+    padding:10px 0;
+    z-index:90;
+  }
+  nav.tabs a{
+    font-family:var(--mono);
+    font-size:12.5px;
+    text-decoration:none;
+    color:var(--bone-dim);
+    background:var(--panel);
+    border:1px solid var(--edge);
+    border-radius:999px;
+    padding:8px 14px;
+    white-space:nowrap;
+  }
+  nav.tabs a:hover, nav.tabs a.active{color:var(--bone); border-color:var(--gold-dim);}
+
+  section.doc-section{
+    margin-bottom:44px;
+    scroll-margin-top:110px;
+  }
+  section.doc-section h2{
+    font-size:19px;
+    font-weight:800;
+    margin:0 0 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  section.doc-section h3{
+    font-size:14.5px;
+    font-weight:700;
+    color:var(--gold-dim);
+    margin:22px 0 8px;
+  }
+  section.doc-section p{line-height:1.7; color:var(--bone-dim); font-size:14.5px; margin:0 0 14px;}
+  section.doc-section strong{color:var(--bone);}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--edge);
+    border-radius:16px;
+    padding:18px 20px;
+    margin-bottom:14px;
+  }
+  .card.warn{border-color:var(--down);}
+  .card.warn h3{color:var(--down);}
+  .card.good{border-color:var(--up);}
+  .card.good h3{color:var(--up);}
+
+  table.scope-table{width:100%; border-collapse:separate; border-spacing:0 6px; font-size:13.5px;}
+  table.scope-table th{
+    text-align:left;
+    color:var(--bone-dim);
+    font-weight:600;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    padding:0 12px 6px;
+  }
+  table.scope-table td{
+    background:var(--panel);
+    border-top:1px solid var(--edge);
+    border-bottom:1px solid var(--edge);
+    padding:11px 12px;
+    color:var(--bone-dim);
+  }
+  table.scope-table td:first-child{border-left:1px solid var(--edge); border-radius:10px 0 0 10px; font-family:var(--mono); color:var(--gold-dim);}
+  table.scope-table td:last-child{border-right:1px solid var(--edge); border-radius:0 10px 10px 0;}
+
+  ul.plain{margin:0 0 14px; padding-left:20px; color:var(--bone-dim); font-size:14.5px; line-height:1.7;}
+  ul.plain li{margin-bottom:6px;}
+  ul.plain strong{color:var(--bone);}
+
+  footer.doc-footer{
+    border-top:1px solid var(--edge);
+    margin-top:40px;
+    padding-top:20px;
+    color:var(--bone-dim);
+    font-size:12.5px;
+    font-family:var(--mono);
+  }
+
+  @media (max-width:480px){
+    header.page-head h1{font-size:23px;}
+    nav.tabs{top:53px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="top-bar-brand">Torn Stock Alerts</div>
+  <a class="back" href="index.html">← Back to app</a>
+</div>
+
+<div class="wrap">
+  <header class="page-head">
+    <h1>Docs & Terms</h1>
+    <p>What this app does with your Torn API key, what gets shared with other visitors, and the terms for using this site. Written in plain language on purpose — no legal team, just an honest account of how it works.</p>
+  </header>
+
+  <nav class="tabs">
+    <a href="#overview">Overview</a>
+    <a href="#api-key">API key usage</a>
+    <a href="#data-sharing">Data & sharing</a>
+    <a href="#terms">Terms of Service</a>
+  </nav>
+
+  <section class="doc-section" id="overview">
+    <h2>Overview</h2>
+    <p>Torn Stock Alerts is a free, unofficial companion tool for the browser game Torn. It watches stock prices you choose and notifies you when they cross a price you set. It runs entirely in your browser — there is no backend server operated by this app, and no account system.</p>
+    <p>Two outside services are used, both directly from your own browser:</p>
+    <ul class="plain">
+      <li><strong>Torn's official API</strong> (<code>api.torn.com</code>) — for live stock prices, bank interest rates, your holdings, and your name, using your own API key.</li>
+      <li><strong>Firebase Realtime Database</strong> — an optional shared price-history pool, so the price graphs fill in faster using data from every visitor, not just you.</li>
+    </ul>
+    <p>This project is not made, endorsed, or supported by Torn or its developers.</p>
+  </section>
+
+  <section class="doc-section" id="api-key">
+    <h2>API key usage</h2>
+    <p>Your Torn API key is what lets this app read live data from Torn on your behalf. Here's exactly what it's used for and how it's handled.</p>
+
+    <h3>Where it's stored</h3>
+    <div class="card good">
+      <p style="margin:0;">Your key is saved only in this browser's local storage, on this device. It is never sent to any server other than <code>api.torn.com</code> itself — not to this app's developer, not to Firebase, not anywhere else. Clearing your browser data or using "Log out" removes it.</p>
+    </div>
+
+    <h3>What it's used to fetch</h3>
+    <table class="scope-table">
+      <thead><tr><th>Selection</th><th>What it's used for</th></tr></thead>
+      <tbody>
+        <tr><td>torn: stocks</td><td>Live prices for every stock, shown in the list and used for alerts.</td></tr>
+        <tr><td>torn: bank</td><td>Current city bank interest rates, shown in the bank comparator.</td></tr>
+        <tr><td>user: stocks</td><td>Your own share holdings, to auto-fill "shares owned" instead of typing it in.</td></tr>
+        <tr><td>user: basic</td><td>Your player name, only to show a "Welcome back" message.</td></tr>
+      </tbody>
+    </table>
+    <p>A <strong>Public Only</strong> key covers prices, bank rates, and alerts — that's all most people need. The "Build a key for this app" button in the key menu creates a key with exactly these four selections and nothing more, rather than a broader key with access this app doesn't use.</p>
+
+    <h3>What it's never used for</h3>
+    <ul class="plain">
+      <li>No trading, buying, selling, or any action is ever taken in Torn on your behalf.</li>
+      <li>Nothing about your key or account is transmitted to Firebase or any third party.</li>
+      <li>No background automation of any in-game action — this app only ever reads published data.</li>
+    </ul>
+  </section>
+
+  <section class="doc-section" id="data-sharing">
+    <h2>Data & sharing</h2>
+    <p>The price graphs on each stock can pull from two extra sources beyond your own browser's history, in addition to real historical data:</p>
+
+    <h3>Shared price history (Firebase)</h3>
+    <p>Every browser using this app can contribute price checks to a shared pool, so graphs fill in faster than any one person could alone. Only a timestamp and a price are ever written — <strong>never</strong> your name, your key, your holdings, or any other identifying information. The database's rules enforce this at the server level: any submission with extra fields is rejected outright, and nothing outside the shared price-history path is readable or writable by anyone.</p>
+
+    <h3>Real historical prices (Tornsy)</h3>
+    <p>The "Load real price history" button in Settings fetches historical prices from <a href="https://tornsy.com" target="_blank" rel="noopener">Tornsy.com</a>, a free, public, community-run API that requires no key. This only happens when you click that button — nothing is fetched automatically or on a schedule. It's purely reading already-published price data.</p>
+
+    <h3>What stays local only</h3>
+    <ul class="plain">
+      <li>Your API key, watchlist, alert thresholds, and avg buy prices</li>
+      <li>Your display preferences (theme, sort order, compact numbers)</li>
+      <li>Your alert history log</li>
+    </ul>
+    <p>None of the above is ever shared, synced, or visible to anyone else using this app.</p>
+  </section>
+
+  <section class="doc-section" id="terms">
+    <h2>Terms of Service</h2>
+
+    <div class="card warn">
+      <h3 style="margin-top:0;">No warranty, no guarantees</h3>
+      <p style="margin:0;">This is a free, unofficial hobby project. It's provided "as is," with no guarantee it will be accurate, available, or error-free. Prices, alerts, projections, and calculations may be wrong, delayed, or missing. Don't rely on it as your only source for decisions involving real in-game money.</p>
+    </div>
+
+    <h3>Your responsibility</h3>
+    <ul class="plain">
+      <li>You generate and provide your own Torn API key at your own discretion, and can revoke it at any time from Torn's own site.</li>
+      <li>You're responsible for how you use any figures this app shows you — investment suggestions, ROI rankings, and bank comparisons are estimates, not financial advice.</li>
+      <li>Following Torn's own rules and API terms of use is your responsibility as the key holder.</li>
+    </ul>
+
+    <h3>No affiliation</h3>
+    <p>This app is an independent, unofficial project and is not affiliated with, endorsed by, or supported by Torn or its developers.</p>
+
+    <h3>Changes</h3>
+    <p>This app, its features, and these terms may change at any time without notice, since it's maintained as a free hobby project rather than a commercial product.</p>
+
+    <h3>Contact</h3>
+    <p>This is a personal project without a formal support channel. Use the source repository for issues or questions.</p>
+  </section>
+
+  <footer class="doc-footer">
+    Torn Stock Alerts — unofficial, fan-made, not affiliated with Torn.
+  </footer>
+</div>
+
+</body>
+</html>
