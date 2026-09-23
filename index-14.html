@@ -1,0 +1,2947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Torn Stock Alerts</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0e14">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stock Alerts">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0e14;
+    --panel:#131720;
+    --panel-2:#171c28;
+    --edge:#262c3a;
+    --gold:#4f8ef7;
+    --gold-dim:#7ba7f0;
+    --bone:#e7eaf1;
+    --bone-dim:#8b93a7;
+    --up:#3ecf8e;
+    --down:#f0576b;
+    --mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --slab: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  :root[data-theme="light"]{
+    --bg:#f3f5f9;
+    --panel:#ffffff;
+    --panel-2:#eef1f6;
+    --edge:#dbe1ea;
+    --gold:#2f6fe0;
+    --gold-dim:#5b8def;
+    --bone:#1b2333;
+    --bone-dim:#5b6478;
+    --up:#1f9d63;
+    --down:#d23c50;
+  }
+  body{transition:background-color 0.15s ease, color 0.15s ease;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--bone);
+    font-family:var(--slab);
+    min-height:100vh;
+  }
+  @font-face{ /* fallback stack only, no external font fetch needed for function */ }
+
+  .wrap{max-width:760px;margin:0 auto;padding:0 0 60px;}
+
+  /* ---- Ticker tape header ---- */
+  .tape-outer{
+    background:#0e0c09;
+    border-bottom:2px solid var(--gold-dim);
+    overflow:hidden;
+    white-space:nowrap;
+    position:relative;
+  }
+  .tape-track{
+    display:inline-block;
+    padding:10px 0;
+    font-family:var(--mono);
+    font-size:13px;
+    letter-spacing:0.02em;
+    animation:scroll 28s linear infinite;
+    will-change:transform;
+  }
+  .tape-track span{margin:0 22px; color:var(--bone-dim);}
+  .tape-track span.up{color:var(--up);}
+  .tape-track span.down{color:var(--down);}
+  @keyframes scroll{
+    from{transform:translateX(0);}
+    to{transform:translateX(-50%);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .tape-track{animation:none;}
+  }
+
+  .top-bar{
+    position:sticky;
+    top:0;
+    z-index:1000;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px 18px;
+    background:var(--panel);
+    border-bottom:1px solid var(--edge);
+  }
+  .top-bar-brand{
+    font-family:var(--slab);
+    font-weight:800;
+    font-size:15px;
+    color:var(--bone);
+    letter-spacing:-0.01em;
+  }
+  .top-bar-actions{display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;}
+  .menu-wrap{position:relative;}
+  .icon-only-btn{
+    width:40px; height:40px;
+    padding:0;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:999px;
+    border:1px solid var(--edge);
+    background:var(--panel-2);
+    color:var(--bone-dim);
+  }
+  .icon-only-btn .icon-slot, .icon-only-btn .icon-slot .micro-icon{width:18px; height:18px; margin:0;}
+  .icon-only-btn:hover{color:var(--bone); background:var(--panel-2); border-color:var(--gold-dim); transform:translateY(-1px) scale(1.06);}
+  .icon-only-btn[aria-expanded="true"]{color:var(--gold); border-color:var(--gold-dim); background:rgba(79,142,247,0.1);}
+  .dropdown-panel{
+    position:absolute;
+    top:calc(100% + 10px);
+    right:0;
+    width:min(420px, 92vw);
+    max-height:80vh;
+    overflow-y:auto;
+    background:var(--panel);
+    border:1px solid var(--edge);
+    border-radius:16px;
+    padding:18px 20px;
+    box-shadow:0 12px 32px rgba(0,0,0,0.45);
+  }
+  .dropdown-panel h3{
+    display:flex; align-items:center; gap:7px;
+    font-family:var(--slab); font-weight:800; font-size:15px; color:var(--bone);
+    margin:0 0 14px;
+  }
+  .dropdown-panel h3 .icon-slot{color:var(--gold);}
+  @media (max-width:480px){
+    .top-bar-brand{font-size:13.5px;}
+    .dropdown-panel{
+      position:fixed;
+      top:64px;
+      right:8px;
+      left:8px;
+      width:auto;
+    }
+  }
+
+  header.title-block{
+    padding:34px 20px 18px;
+    border-bottom:1px solid var(--edge);
+  }
+  header.title-block h1{
+    font-family:var(--slab);
+    font-weight:700;
+    font-size:28px;
+    margin:0 0 6px;
+    color:var(--gold);
+    letter-spacing:0.01em;
+  }
+  header.title-block p{
+    margin:0;
+    color:var(--bone-dim);
+    font-size:14px;
+    line-height:1.5;
+    max-width:56ch;
+  }
+  .welcome-msg{
+    margin-top:10px !important;
+    font-family:var(--slab);
+    font-weight:700;
+    font-size:15px;
+    color:var(--gold) !important;
+  }
+
+  section{padding:22px 20px; border-bottom:1px solid var(--edge);}
+  section h2{
+    font-family:var(--slab);
+    font-size:15px;
+    font-weight:700;
+    color:var(--bone);
+    margin:0 0 14px;
+  }
+
+  .help{
+    display:inline-block;
+    margin-left:6px;
+    vertical-align:middle;
+  }
+  .help summary{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:17px;
+    height:17px;
+    border-radius:50%;
+    border:1px solid var(--gold-dim);
+    color:var(--gold-dim);
+    font-family:var(--mono);
+    font-size:11px;
+    cursor:pointer;
+    list-style:none;
+    user-select:none;
+  }
+  .help summary::-webkit-details-marker{display:none;}
+  .help summary:hover{background:var(--gold-dim); color:#141109;}
+  .help[open] summary{background:var(--gold); border-color:var(--gold); color:#141109;}
+  .help .help-body{
+    margin-top:8px;
+    padding:10px 12px;
+    background:var(--panel-2);
+    border:1px solid var(--edge);
+    border-radius:8px;
+    font-family:var(--slab);
+    font-size:12.5px;
+    color:var(--bone-dim);
+    line-height:1.5;
+    max-width:46ch;
+  }
+  h2 .help{margin-left:8px;}
+
+  label{display:block; font-size:12.5px; color:var(--bone-dim); margin-bottom:5px;}
+  input, select{
+    width:100%;
+    background:var(--panel);
+    border:1px solid var(--edge);
+    color:var(--bone);
+    font-family:var(--mono);
+    font-size:14px;
+    padding:10px 14px;
+    border-radius:14px;
+    outline:none;
+    transition:border-color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
+  }
+  input:focus, select:focus{border-color:var(--gold-dim); box-shadow:0 0 0 4px rgba(79,142,247,0.15);}
+  input::placeholder{color:var(--bone-dim); opacity:0.6;}
+
+  .row{display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;}
+  .row > div{flex:1; min-width:150px;}
+
+  @media (max-width:480px){
+    .row{flex-direction:column;}
+    .row > div{width:100%; min-width:0;}
+    header.title-block h1{font-size:24px;}
+    .stock-top{flex-wrap:wrap;}
+    .stock-top .price{margin-left:auto;}
+    .thresh-panel{flex-direction:column;}
+    .thresh-panel .field{width:100%; min-width:0; max-width:100%;}
+  }
+
+  button, a.ghost{
+    font-family:var(--slab);
+    font-weight:700;
+    font-size:13.5px;
+    border-radius:999px;
+    border:1px solid var(--gold-dim);
+    background:transparent;
+    color:var(--gold);
+    padding:10px 18px;
+    cursor:pointer;
+    transition:background 0.15s ease, color 0.15s ease, transform 0.15s cubic-bezier(.34,1.56,.64,1), box-shadow 0.15s ease;
+  }
+  button:hover, a.ghost:hover{background:var(--gold-dim); color:#ffffff; transform:translateY(-1px) scale(1.03); box-shadow:0 4px 14px rgba(79,142,247,0.25);}
+  button:active, a.ghost:active{transform:translateY(0) scale(0.96); box-shadow:0 1px 4px rgba(79,142,247,0.2);}
+  button.primary{background:var(--gold); color:#ffffff; border-color:var(--gold); box-shadow:0 3px 10px rgba(79,142,247,0.3);}
+  button.primary:hover{background:var(--gold-dim);}
+  button.ghost, a.ghost{border-color:var(--edge); color:var(--bone-dim);}
+  button.ghost:hover, a.ghost:hover{background:var(--panel-2); color:var(--bone); box-shadow:0 4px 14px rgba(0,0,0,0.2);}
+  button.small{padding:6px 14px; font-size:12px;}
+  button:disabled{opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none;}
+
+  .status-line{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--bone-dim);
+    margin-top:10px;
+    min-height:16px;
+  }
+  .status-line.err{color:var(--down);}
+  .status-line.ok{color:var(--up);}
+
+  .stock-search{margin-bottom:14px;}
+
+  .stock-card{
+    background:var(--panel);
+    border:1px solid var(--edge);
+    border-radius:18px;
+    padding:14px 18px;
+    margin-bottom:10px;
+    transition:border-color 0.15s ease, transform 0.15s cubic-bezier(.34,1.56,.64,1), box-shadow 0.15s ease;
+  }
+  .stock-card:hover{transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,0.25);}
+  .stock-card.checked{border-color:var(--gold-dim); box-shadow:0 0 0 3px rgba(79,142,247,0.1);}
+  .stock-top{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .stock-top input[type=checkbox]{
+    width:18px; height:18px; flex:none;
+    accent-color:var(--gold);
+    cursor:pointer;
+  }
+  .stock-top .stock-id-block{flex:1; min-width:0;}
+  .stock-top .name{
+    font-family:var(--slab);
+    font-weight:700;
+    font-size:14.5px;
+    color:var(--bone);
+  }
+  .stock-top .acr{color:var(--gold-dim); font-family:var(--mono); font-size:11.5px; margin-left:6px;}
+  .stock-top .price{
+    font-family:var(--mono);
+    font-size:16px;
+    color:var(--bone);
+    white-space:nowrap;
+  }
+  .change-24h{font-family:var(--mono); font-size:11px; margin-left:4px;}
+  .change-24h.up{color:var(--up);}
+  .change-24h.down{color:var(--down);}
+  .change-24h.muted{color:var(--bone-dim); opacity:0.7;}
+
+  .tick-arrow{
+    font-size:14px;
+    font-weight:700;
+  }
+  .tick-arrow.up{color:var(--up);}
+  .tick-arrow.down{color:var(--down);}
+  .card-details{
+    display:none;
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid var(--edge);
+  }
+  .stock-card.checked .card-details{display:block;}
+  .card-details summary{
+    cursor:pointer;
+    list-style:none;
+    user-select:none;
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    font-family:var(--slab);
+    font-weight:700;
+    font-size:12.5px;
+    color:var(--gold-dim);
+  }
+  .card-details summary::-webkit-details-marker{display:none;}
+  .card-details summary::before{
+    content:'▸';
+    font-size:10px;
+    display:inline-block;
+    transition:transform 0.15s ease;
+  }
+  .card-details[open] summary{color:var(--gold);}
+  .card-details[open] summary::before{transform:rotate(90deg);}
+  .key-field-wrap{position:relative; display:flex; align-items:center;}
+  .key-field-wrap input{width:100%; padding-right:38px;}
+  .key-field-wrap input.masked{-webkit-text-security:disc; text-security:disc;}
+  .key-toggle-btn{
+    position:absolute;
+    right:6px;
+    top:50%;
+    transform:translateY(-50%);
+    background:none;
+    border:none;
+    padding:4px 6px;
+    font-size:15px;
+    line-height:1;
+    cursor:pointer;
+    color:var(--bone-dim);
+    opacity:0.8;
+  }
+  .key-toggle-btn:hover{opacity:1; color:var(--bone); transform:translateY(-50%) scale(1.15); background:none; box-shadow:none;}
+  .key-toggle-btn:active{transform:translateY(-50%) scale(0.9);}
+  .key-toggle-btn.showing{color:var(--gold);}
+
+  .thresh-panel{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:12px;
+    align-items:flex-end;
+  }
+  .thresh-panel .field{flex:1; min-width:130px;}
+  .thresh-panel label{margin-bottom:4px;}
+  .thresh-panel input{width:100%;}
+  .owned-field-wrap{display:flex; align-items:center; gap:6px;}
+  .owned-field-wrap input{flex:1;}
+  .clear-owned-btn{
+    flex:none;
+    width:30px; height:30px;
+    padding:0;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:8px;
+    border:1px solid var(--edge);
+    background:var(--panel-2);
+    color:var(--bone-dim);
+  }
+  .clear-owned-btn .micro-icon{width:15px; height:15px; margin:0;}
+  .clear-owned-btn:hover{color:var(--down); border-color:var(--down); background:rgba(255,90,90,0.08); transform:none;}
+  .field-warning{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--down);
+    margin-top:6px;
+    line-height:1.5;
+  }
+  .position-table{width:100%; border-collapse:separate; border-spacing:0 4px; font-family:var(--mono); font-size:12px; margin:4px 0;}
+  .position-table th{text-align:left; color:var(--bone-dim); font-weight:600; font-size:9.5px; text-transform:uppercase; letter-spacing:0.05em; padding:0 10px 4px;}
+  .position-table td{padding:9px 10px; background:var(--panel-2); border-top:1px solid var(--edge); border-bottom:1px solid var(--edge); white-space:nowrap;}
+  .position-table td:first-child{border-left:1px solid var(--edge); border-radius:8px 0 0 8px;}
+  .position-table td:last-child{border-right:1px solid var(--edge); border-radius:0 8px 8px 0;}
+  .position-table td.up{color:var(--up);}
+  .position-table td.down{color:var(--down);}
+  .position-table-wrap{overflow-x:auto; margin-bottom:4px;}
+  .armed-tag{font-family:var(--mono); font-size:11px; padding:4px 10px; border-radius:999px; border:1px solid var(--edge); color:var(--bone-dim); white-space:nowrap;}
+  .armed-tag.hit-high{border-color:var(--up); color:var(--up);}
+  .armed-tag.hit-low{border-color:var(--down); color:var(--down);}
+
+  .spark-wrap{margin-top:8px;}
+  .spark-wrap.spark-empty{
+    font-family:var(--slab);
+    font-size:11.5px;
+    font-style:italic;
+    color:var(--bone-dim);
+  }
+  .spark{width:100%; height:32px; display:block;}
+  .spark-point{transition:opacity 0.1s ease;}
+  .spark-point:hover{opacity:0.15;}
+  .spark-tooltip{
+    position:fixed;
+    z-index:9999;
+    display:none;
+    background:var(--panel-2);
+    border:1px solid var(--edge);
+    border-radius:12px;
+    padding:8px 12px;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--bone);
+    pointer-events:none;
+    box-shadow:0 4px 14px rgba(0,0,0,0.4);
+    white-space:nowrap;
+  }
+  .spark-tooltip .spark-tooltip-time{color:var(--bone-dim); margin-bottom:3px;}
+  .spark-tooltip .up{color:var(--up);}
+  .spark-tooltip .down{color:var(--down);}
+  .spark-meta{
+    display:flex;
+    justify-content:space-between;
+    font-family:var(--mono);
+    font-size:10.5px;
+    color:var(--bone-dim);
+    margin-top:2px;
+  }
+  .spark-legend{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    font-family:var(--mono);
+    font-size:10px;
+    margin-top:3px;
+  }
+
+  .benefit-line{
+    font-family:var(--slab);
+    font-size:12px;
+    color:var(--bone-dim);
+    margin-top:4px;
+    padding-left:30px;
+    line-height:1.4;
+  }
+  .benefit-line .met{color:var(--up);}
+  .benefit-line .need{color:var(--gold-dim);}
+
+  .position-line{
+    display:flex;
+    flex-wrap:wrap;
+    gap:4px 12px;
+    font-family:var(--mono);
+    font-size:12px;
+    margin-top:6px;
+    padding:8px 10px 8px 20px;
+    background:var(--panel-2);
+    border-radius:8px;
+    border-left:3px solid var(--gold-dim);
+  }
+  .position-then{color:var(--bone-dim);}
+  .position-now{color:var(--bone);}
+  .position-pl{font-weight:700; margin-left:auto;}
+
+  .range-line{
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--bone-dim);
+    margin-top:4px;
+    padding-left:30px;
+  }
+  .signal-tag{
+    font-family:var(--mono);
+    font-size:11px;
+    padding:2px 7px;
+    border-radius:10px;
+    border:1px solid var(--edge);
+    white-space:nowrap;
+  }
+  .signal-tag.buy{border-color:var(--up); color:var(--up);}
+  .signal-tag.high{border-color:var(--down); color:var(--down);}
+  .signal-tag.mid{color:var(--bone-dim);}
+  .suggestion-line{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--bone);
+    margin-top:8px;
+    padding-top:8px;
+    border-top:1px solid var(--edge);
+    width:100%;
+  }
+  .suggestion-line .amt{color:var(--gold);}
+
+  .qr-output{
+    display:flex;
+    justify-content:center;
+    margin:4px 0 14px;
+  }
+  .qr-output:empty{margin:0;}
+  .qr-output-inner{
+    background:#ffffff;
+    padding:16px;
+    border-radius:6px;
+    display:inline-block;
+    line-height:0;
+  }
+  .qr-output img, .qr-output canvas{
+    display:block;
+    background:#fff;
+  }
+  #qrVideo{
+    display:none;
+    width:100%;
+    max-width:320px;
+    border-radius:6px;
+    border:1px solid var(--edge);
+    margin-bottom:10px;
+  }
+
+  .log-row{
+    display:flex;
+    gap:10px;
+    align-items:baseline;
+    background:var(--panel);
+    border:1px solid var(--edge);
+    border-radius:8px;
+    padding:9px 12px;
+    margin-bottom:6px;
+    font-family:var(--mono);
+    font-size:12px;
+  }
+  .log-row .log-time{color:var(--gold-dim); white-space:nowrap; flex:none;}
+  .log-row .log-text{color:var(--bone-dim);}
+  .log-row .log-text b{color:var(--bone); font-family:var(--slab);}
+
+  .signals-box{margin-bottom:16px;}
+  .signals-box:empty{margin-bottom:0;}
+  .signal-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    background:var(--panel-2);
+    border:1px solid var(--edge);
+    border-radius:16px;
+    padding:11px 14px;
+    margin-bottom:8px;
+    font-family:var(--mono);
+    font-size:12.5px;
+  }
+  .signal-row.buy{border-left:3px solid var(--up);}
+  .signal-row.sell{border-left:3px solid var(--down);}
+  .signal-row .signal-name{color:var(--bone); font-family:var(--slab); font-weight:700; font-size:13.5px;}
+  .signal-row .signal-name .acr{color:var(--gold-dim); font-weight:400; font-size:11px;}
+  .signal-row .signal-text{color:var(--bone-dim); margin-left:auto;}
+
+  .micro-icon{width:13px; height:13px; flex:none; opacity:0.75;}
+  h2 .icon-slot, h2 .icon-slot .micro-icon{width:17px; height:17px; opacity:0.85;}
+  h2 .icon-slot{display:inline-flex; vertical-align:-3px; margin-right:7px; color:var(--gold);}
+  button .icon-slot, a.ghost .icon-slot{display:inline-flex; vertical-align:-2px; margin-right:6px;}
+  button .icon-slot .micro-icon, a.ghost .icon-slot .micro-icon{width:14px; height:14px;}
+  #logoutKeyBtn{border-color:var(--down); color:var(--down);}
+  #logoutKeyBtn:hover{background:var(--down); color:#ffffff;}
+
+  .range-picker-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin:4px 0 14px;
+  }
+  .range-picker-label{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--bone-dim);
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+  }
+  .range-picker{display:flex; gap:6px; flex-wrap:wrap;}
+  .range-pill{
+    font-family:var(--mono);
+    font-size:12px;
+    font-weight:600;
+    padding:6px 14px;
+    border-radius:999px;
+    border:1px solid var(--edge);
+    background:var(--panel);
+    color:var(--bone-dim);
+    cursor:pointer;
+  }
+  .range-pill:hover{color:var(--bone); border-color:var(--gold-dim);}
+  .range-pill.active{color:#ffffff; background:var(--gold); border-color:var(--gold);}
+
+  .tornsy-prompt{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:14px;
+    justify-content:space-between;
+    background:var(--panel);
+    border:1px solid var(--gold-dim);
+    border-radius:16px;
+    padding:14px 18px;
+    margin-bottom:16px;
+    box-shadow:0 4px 16px rgba(79,142,247,0.12);
+  }
+  .tornsy-prompt[hidden]{display:none;}
+  .tornsy-prompt-text{flex:1; min-width:220px; font-size:13.5px; line-height:1.55; color:var(--bone-dim);}
+  .tornsy-prompt-text strong{color:var(--bone);}
+  .tornsy-prompt-actions{display:flex; gap:8px; flex:none;}
+
+  .income-box:empty, .buy-next-box:empty{margin:0;}
+  .income-box{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-bottom:18px;
+  }
+  .income-stat{
+    flex:1;
+    min-width:140px;
+    background:var(--panel);
+    border:1px solid var(--edge);
+    border-radius:18px;
+    padding:16px 18px;
+    transition:transform 0.15s cubic-bezier(.34,1.56,.64,1), box-shadow 0.15s ease;
+  }
+  .income-stat:hover{transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,0.22);}
+  .income-stat.highlight{border-color:var(--gold-dim);}
+  .income-stat .label{
+    display:flex; align-items:center; gap:6px;
+    font-family:var(--slab); font-weight:600; font-size:10.5px;
+    color:var(--bone-dim); text-transform:uppercase; letter-spacing:0.06em;
+    margin-bottom:8px;
+  }
+  .income-stat .value{font-family:var(--slab); font-weight:800; font-size:20px; color:var(--bone); letter-spacing:-0.01em;}
+  .income-stat .caption{font-family:var(--slab); font-size:11px; color:var(--bone-dim); margin-top:3px;}
+  .income-note{font-family:var(--slab); font-size:11.5px; color:var(--bone-dim); flex-basis:100%; margin-top:2px;}
+
+  .buy-next-box{margin-bottom:18px;}
+  .buy-next-box h3, .bank-box h3{
+    display:flex; align-items:center; gap:7px;
+    font-family:var(--slab);
+    font-weight:700;
+    font-size:14px;
+    color:var(--bone);
+    margin:0 0 10px;
+  }
+  .buy-next-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    background:var(--panel);
+    border:1px solid var(--edge);
+    border-radius:16px;
+    padding:12px 16px;
+    margin-bottom:8px;
+    font-family:var(--slab);
+    font-size:13px;
+    transition:transform 0.15s cubic-bezier(.34,1.56,.64,1), box-shadow 0.15s ease;
+  }
+  .buy-next-row:hover{transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,0.22);}
+  .buy-next-row .rank{
+    color:var(--gold);
+    font-weight:800;
+    width:24px; height:24px; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--panel-2);
+    border-radius:999px;
+    font-size:11px;
+  }
+  .buy-next-row .bn-name{color:var(--bone); font-weight:700; font-size:13.5px;}
+  .buy-next-row .bn-name .acr{color:var(--bone-dim); font-weight:500; font-size:11px; font-family:var(--mono);}
+  .buy-next-row .bn-detail{color:var(--bone-dim); margin-left:auto; font-size:12px; font-family:var(--mono);}
+  .buy-next-row .bn-roi{color:var(--up); font-weight:700; font-family:var(--mono);}
+
+  .bank-box{
+    margin-bottom:18px;
+    background:var(--panel);
+    border:1px solid var(--edge);
+    border-radius:18px;
+    padding:16px 18px;
+  }
+  .bank-box .card-details summary{font-family:var(--slab); font-weight:700; font-size:14px; color:var(--bone);}
+  .bank-box .card-details summary::before{content:''; display:none;}
+  .bank-box .card-details[open] summary{color:var(--bone);}
+  .bank-table{width:100%; border-collapse:separate; border-spacing:0 6px; font-family:var(--mono); font-size:12.5px; margin-top:10px;}
+  .bank-table th{text-align:left; color:var(--bone-dim); font-weight:600; font-family:var(--slab); padding:0 12px 4px; font-size:10.5px; text-transform:uppercase; letter-spacing:0.05em;}
+  .bank-table td{padding:12px 14px; background:var(--panel-2); border-top:1px solid var(--edge); border-bottom:1px solid var(--edge);}
+  .bank-table td:first-child{border-left:1px solid var(--edge); border-radius:14px 0 0 14px;}
+  .bank-table td:last-child{border-right:1px solid var(--edge); border-radius:0 14px 14px 0; text-align:right;}
+  .bank-table tr.best td{background:rgba(79,142,247,0.1); border-color:var(--gold-dim); color:var(--bone);}
+  .bank-table tr.best .apr-best-tag{color:var(--gold); font-weight:700;}
+  .bank-best-line{
+    display:flex; gap:16px; flex-wrap:wrap; align-items:center;
+    font-family:var(--mono); font-size:12px; color:var(--bone-dim);
+    background:var(--panel-2); border:1px solid var(--edge); border-radius:999px;
+    padding:11px 18px; margin-bottom:8px;
+  }
+  .bank-best-line b{color:var(--bone); font-weight:600;}
+  .bank-best-line .micro-icon{opacity:0.9;}
+  .bank-deposit-row{display:flex; gap:10px; align-items:flex-end; margin-bottom:10px; flex-wrap:wrap;}
+  .bank-deposit-row .field{flex:none; width:200px;}
+
+
+  .empty{
+    color:var(--bone-dim);
+    font-size:13.5px;
+    font-style:italic;
+    padding:10px 0;
+  }
+
+  .footnote{
+    padding:18px 20px 0;
+    font-size:12px;
+    color:#6b6350;
+    line-height:1.6;
+  }
+  .footnote a{color:var(--gold-dim);}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="top-bar-brand">Torn Stock Alerts</div>
+  <div class="top-bar-actions">
+    <a href="docs.html" class="icon-only-btn" aria-label="Docs & Terms" title="Docs & Terms"><span class="icon-slot" data-icon="docs"></span></a>
+    <div class="menu-wrap">
+      <button type="button" id="keyMenuBtn" class="icon-only-btn" aria-label="API key" aria-expanded="false"><span class="icon-slot" data-icon="key"></span></button>
+      <div id="keyPanel" class="dropdown-panel" hidden>
+        <h3><span class="icon-slot" data-icon="key"></span>API key
+          <details class="help">
+            <summary>?</summary>
+            <div class="help-body">An API key lets this app read live data from Torn on your behalf. A "Public Only" key is all you need for prices and alerts. If you also want your owned shares filled in automatically, plus live bank interest rates, the key needs a couple of extra selections — use the "Build a key for this app" button below rather than a broader Minimal/Limited/Full key, so you're only granting what's actually used.</div>
+          </details>
+        </h3>
+        <div class="row">
+          <div>
+            <label for="apiKey">Torn API key</label>
+            <div class="key-field-wrap">
+              <input id="apiKey" type="text" placeholder="Paste your key" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other">
+              <button type="button" id="toggleKeyBtn" class="key-toggle-btn" aria-label="Show API key" title="Show API key">👁</button>
+            </div>
+          </div>
+        </div>
+        <div class="row" style="gap:10px;">
+          <button class="primary" id="saveKeyBtn"><span class="icon-slot" data-icon="key"></span>Save key</button>
+          <button class="ghost" id="logoutKeyBtn"><span class="icon-slot" data-icon="logout"></span>Log out</button>
+        </div>
+        <div class="row" style="gap:10px;">
+          <button class="ghost" id="customKeyBtn"><span class="icon-slot" data-icon="userPlus"></span>Build a key for this app</button>
+          <details class="help">
+            <summary>?</summary>
+            <div class="help-body">Opens Torn's key creation page with exactly four selections pre-checked: general stock prices, current bank rates, your own stock holdings, and your basic profile info (just your name, for the welcome message) — nothing else. Just give it a name and save, then paste the new key above. Skip this if you're happy entering "shares owned" by hand and don't need the bank comparator or name greeting.</div>
+          </details>
+        </div>
+        <div class="status-line" id="keyStatus">A "Public Only" key covers prices and alerts. Stored only on this device, never sent anywhere but Torn.</div>
+      </div>
+    </div>
+    <div class="menu-wrap">
+      <button type="button" id="settingsMenuBtn" class="icon-only-btn" aria-label="Settings" aria-expanded="false"><span class="icon-slot" data-icon="gear"></span></button>
+      <div id="settingsPanel" class="dropdown-panel" hidden>
+        <h3><span class="icon-slot" data-icon="gear"></span>Settings
+          <details class="help">
+            <summary>?</summary>
+            <div class="help-body">App-wide options, pulled into one place. Everything here is stored only on this device.</div>
+          </details>
+        </h3>
+        <div class="row" style="align-items:flex-end;">
+          <div style="flex:none; width:170px;">
+            <label for="budgetInput">Cash to invest
+              <details class="help">
+                <summary>?</summary>
+                <div class="help-body">The amount of in-game money you have available. Used only to suggest how many shares you could afford for stocks flagged as near their session low — nothing is spent automatically.</div>
+              </details>
+            </label>
+            <input id="budgetInput" type="number" step="1" placeholder="e.g. 5000000">
+          </div>
+          <div style="flex:none;">
+            <label for="pollInterval">Check every
+              <details class="help">
+                <summary>?</summary>
+                <div class="help-body">How often the app re-checks prices while this tab is open. Shorter intervals catch price moves sooner but use more of your API key's request allowance (Torn allows 100 requests per minute).</div>
+              </details>
+            </label>
+            <select id="pollInterval">
+              <option value="60">1 minute</option>
+              <option value="120" selected>2 minutes</option>
+              <option value="300">5 minutes</option>
+              <option value="600">10 minutes</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="gap:16px; align-items:flex-end; margin-top:14px;">
+          <div style="flex:none;">
+            <label for="sortMode">Sort by
+              <details class="help">
+                <summary>?</summary>
+                <div class="help-body">How the stock list is ordered. "Biggest movers" ranks by the largest % change since your last visit; "Closest to alert" ranks watched stocks by how near they are to a threshold you've set.</div>
+              </details>
+            </label>
+            <select id="sortMode">
+              <option value="name" selected>Name (A–Z)</option>
+              <option value="pctChange">Biggest movers</option>
+              <option value="distance">Closest to alert</option>
+            </select>
+          </div>
+          <div style="flex:none;">
+            <button class="ghost" id="compactToggleBtn">Compact numbers: Off</button>
+            <details class="help">
+              <summary>?</summary>
+              <div class="help-body">Shows large totals (worth, profit/loss, share counts) in short form, like $1.2M instead of $1,196,000. Per-share prices are never shortened.</div>
+            </details>
+          </div>
+          <div style="flex:none;">
+            <button class="ghost" id="themeToggleBtn">Theme: Dark</button>
+          </div>
+        </div>
+        <div class="range-picker-row">
+          <span class="range-picker-label">Graph range
+            <details class="help" style="display:inline;">
+              <summary>?</summary>
+              <div class="help-body">How far back each stock's price graph and session high/low look. Doesn't affect what's tracked underneath — just what's shown.</div>
+            </details>
+          </span>
+          <div class="range-picker" id="rangePicker">
+            <button type="button" class="range-pill" data-range="1h">1h</button>
+            <button type="button" class="range-pill" data-range="24h">24h</button>
+            <button type="button" class="range-pill" data-range="7d">7d</button>
+            <button type="button" class="range-pill" data-range="30d">30d</button>
+            <button type="button" class="range-pill" data-range="all">All</button>
+          </div>
+        </div>
+        <div class="row" style="gap:10px;">
+          <button class="ghost" id="notifBtn">Enable notifications</button>
+          <details class="help">
+            <summary>?</summary>
+            <div class="help-body">Turns on your browser's built-in notification pop-ups. Your browser will ask you to allow this once — say yes so alerts can actually show up.</div>
+          </details>
+        </div>
+        <div class="row" style="gap:10px;">
+          <button class="ghost" id="loadTornsyBtn"><span class="icon-slot" data-icon="trendingUp"></span>Load real price history</button>
+          <details class="help">
+            <summary>?</summary>
+            <div class="help-body">A one-time, manual fetch of real historical prices (last ~7 days, hourly) for every loaded stock, from Tornsy.com — a free, public, no-key API built by the Torn community specifically for this, and openly documented. Nothing automatic: it only runs when you click it, once, and it's purely reading already-published price data — no in-game actions of any kind.</div>
+          </details>
+        </div>
+        <div class="row" style="gap:10px;">
+          <button class="ghost" id="resetAllBtn" style="border-color:var(--down); color:var(--down);">Reset all app data</button>
+          <details class="help">
+            <summary>?</summary>
+            <div class="help-body">Wipes everything this app has saved on this device — your API key, watchlist, thresholds, portfolio entries, ranges, and alert history — and reloads to a blank slate. This can't be undone; back up your watchlist first if you want to keep it.</div>
+          </details>
+        </div>
+        <div class="row" style="gap:10px;">
+          <a class="ghost" id="donateBtn" href="https://www.torn.com/profiles.php?XID=3009144" target="_blank" rel="noopener noreferrer" style="text-decoration:none; display:inline-flex; align-items:center;"><span class="icon-slot" data-icon="heart"></span>Donate</a>
+          <details class="help">
+            <summary>?</summary>
+            <div class="help-body">Opens the developer's Torn profile in a new tab, where you can send an in-game donation if this app's been useful to you. Fully optional.</div>
+          </details>
+        </div>
+        <div class="status-line" id="settingsStatus"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tape-outer">
+  <div class="tape-track" id="tapeTrack">
+    <span>Connect your API key to start the tape&nbsp;&nbsp;·&nbsp;&nbsp;</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="title-block">
+    <h1>Torn Stock Alerts</h1>
+    <p>Watch any Torn stock and get a notification the moment it crosses a price you set — either direction. Keep this tab open; it checks prices in the background.</p>
+    <p id="welcomeMsg" class="welcome-msg" style="display:none;"></p>
+    <button class="ghost" id="installBtn" style="margin-top:14px; display:none;">Install as app</button>
+  </header>
+
+  <section>
+    <h2>1. Choose which stocks to watch
+      <details class="help">
+        <summary>?</summary>
+        <div class="help-body">
+          Check a stock to start watching it. "Notify below/above" are fixed prices that trigger an alert. "Or if it drops/rises %" is an alternative — it locks in the current price as a baseline the moment you set it, and alerts once the price moves that % away from that baseline. Leave any of these blank to skip.<br><br>
+          "This session" is the lowest and highest price <strong>this browser has live-polled since you opened this tab</strong> — it drives the real-time buy/sell alerts below, and resets fresh each time you start a new session. The <strong>graph</strong> is a different, usually much wider picture: it blends this session with shared checks from every visitor and (if you've loaded it) real historical data from Tornsy, so it's normal for the graph's range to look nothing like "This session" — they're deliberately different things, not a bug. The "% of this session" number is just where today's price sits between that session's low and high — 0% is the session low, 100% is the session high. It's a description of the past, not a forecast: it can't tell you where the price is headed next, and Torn's market can move against it at any time.<br><br>
+          "Watched only" hides everything except your checked stocks, useful once your list gets long.<br><br>
+          "Since last visit" compares the price now to whatever it was the last time you had this app open — including after closing it entirely. A "NEW LOW"/"NEW HIGH" badge means this exact check just pushed the price past every reading this app has ever recorded for that stock, and watched stocks get a notification for it too.<br><br>
+          Where Torn provides it, a line under the range shows that stock's investor benefit, based on what you've entered in "You own." Active benefits (money, items, etc.) pay out on a repeating schedule and scale in "Benefit Block" steps — the 1st increment needs one block of shares, the 2nd needs 3 blocks total, the 3rd needs 7, doubling each time — so it shows your current increment and how many more shares unlock the next one. Passive benefits (like a bank interest or racing boost) are a single on/off perk that needs the share count held for 7 days straight.<br><br>
+          "Your avg buy price" is what you actually paid per share, on average — enter it to see real profit or loss next to "You own," not just current value. "Last collected" (for stocks with active payouts) is the last date you claimed the dividend in-game; the app uses it to count down to your next payout and can notify you when one's ready.<br><br>
+          If a watched stock is near its low and you've entered a budget, it appears above as a buy signal with a suggested share count. If you own shares in one that's near its high, it appears as a "consider selling" flag instead.
+        </div>
+      </details>
+    </h2>
+    <div class="row" style="align-items:flex-end;">
+      <div>
+        <label for="stockFilter">Filter by name or ticker</label>
+        <input id="stockFilter" type="text" placeholder="e.g. sym or tcm">
+      </div>
+      <div style="flex:none; display:flex; align-items:center; gap:6px; padding-bottom:9px;">
+        <input type="checkbox" id="watchedOnlyToggle" style="width:16px; height:16px; accent-color:var(--gold);">
+        <label for="watchedOnlyToggle" style="margin:0; white-space:nowrap;">Watched only</label>
+      </div>
+      <div style="flex:none;">
+        <button class="ghost" id="checkNowBtn">Check now</button>
+      </div>
+    </div>
+    <div class="row" style="gap:10px; align-items:center;">
+      <button class="ghost" id="syncHoldingsBtn">Sync my holdings</button>
+      <details class="help">
+        <summary>?</summary>
+        <div class="help-body">Fetches how many shares you actually own straight from Torn and fills in "You own" for you. Needs a key with the "user → stocks" selection — use "Build a key for this app" in the key menu (top right) if you haven't already. If the key doesn't have that access, this will just tell you so; nothing breaks.</div>
+      </details>
+    </div>
+    <div id="tornsyPrompt" class="tornsy-prompt" hidden>
+      <div class="tornsy-prompt-text">
+        <strong>Want real price history?</strong> Right now your graphs only show prices checked since you started using this. Load ~7 days of real historical data from Tornsy — a one-time, manual fetch, nothing automatic.
+      </div>
+      <div class="tornsy-prompt-actions">
+        <button class="primary small" id="tornsyPromptLoadBtn">Load real history</button>
+        <button class="ghost small" id="tornsyPromptDismissBtn">Maybe later</button>
+      </div>
+    </div>
+    <div id="checkTimerStatus" class="status-line"></div>
+    <div id="signalsBox" class="signals-box"></div>
+    <div id="incomeSummaryBox" class="income-box"></div>
+    <div id="buyNextBox" class="buy-next-box"></div>
+    <div class="bank-box" id="bankBox">
+      <details class="card-details" open>
+        <summary>City bank</summary>
+        <div class="income-note" style="margin:2px 0 10px;">Separate from stocks: locked-term interest, pulled live from Torn's bank API.</div>
+        <div id="bankBoxBody"></div>
+      </details>
+    </div>
+    <div id="portfolioSummary" class="status-line" style="margin-bottom:10px;"></div>
+    <div id="stockList"><div class="empty">Connect your API key above to load the stock list.</div></div>
+    <div class="status-line" id="pollStatus"></div>
+  </section>
+
+  <section>
+    <h2>2. Back up your watchlist
+      <details class="help">
+        <summary>?</summary>
+        <div class="help-body">Your watchlist lives only in this browser. Copy a code, or show it as a QR code, to move it to another device — open this app there and either paste the code or scan the QR with "Scan a code." Scanning needs camera permission and only works over HTTPS (which Netlify/GitHub Pages already give you).</div>
+      </details>
+    </h2>
+    <div class="row" style="gap:10px; flex-wrap:wrap;">
+      <button class="ghost" id="exportBtn">Copy watchlist code</button>
+      <button class="ghost" id="showQrBtn">Show as QR code</button>
+    </div>
+    <div id="qrOutput" class="qr-output"></div>
+    <div class="row" style="gap:10px; align-items:flex-end;">
+      <div>
+        <label for="importInput">Paste a code to load</label>
+        <input id="importInput" type="text" placeholder="Paste code here">
+      </div>
+      <div style="flex:none;">
+        <button class="primary" id="importBtn">Load</button>
+      </div>
+    </div>
+    <div class="row" style="gap:10px; align-items:center;">
+      <button class="ghost" id="scanBtn">Scan a code with your camera</button>
+    </div>
+    <video id="qrVideo" playsinline muted></video>
+    <canvas id="qrCanvas" style="display:none;"></canvas>
+    <div class="status-line" id="backupStatus"></div>
+  </section>
+
+  <section>
+    <h2>3. Alert history
+      <details class="help">
+        <summary>?</summary>
+        <div class="help-body">Every alert this app has fired — price thresholds, % moves, new session highs/lows, dividend reminders — gets logged here with a timestamp, so you can see what happened while you were away instead of only the current state. Stored locally, same as everything else; kept to the most recent 50.</div>
+      </details>
+    </h2>
+    <div class="row" style="gap:10px;">
+      <button class="ghost" id="clearLogBtn">Clear history</button>
+    </div>
+    <div id="alertLogList"><div class="empty">No alerts fired yet.</div></div>
+  </section>
+
+  <p class="footnote">
+    Prices come straight from the official Torn API using your key, from your browser — nothing is sent anywhere else.
+    If you use "Sync my holdings," it makes one extra call to Torn's <code>user → stocks</code> selection to read your own share counts — this needs a key with that selection enabled, and is entirely optional; you can always type "You own" by hand instead.
+    High/low shows the range observed since you started tracking each stock here, not its full history.
+    The line graph on each card plots price points that have actually been checked since you started using the app — not Torn's full historical chart. Once the site owner sets up shared history, points from every visitor merge into one graph everyone sees; otherwise it's just this browser's own checks.
+    Buy suggestions are a simple heuristic — where the price sits in the range you've seen — not financial advice; the game's stock market can move against any pattern.
+    Alerts fire once per crossing, then re-arm once the price moves back between your thresholds. Closing this tab pauses checking.
+  </p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
+<!-- Firebase (shared/crowdsourced price history). See CLOUD SETUP comment at top of the script below. -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const keyInput = $('apiKey');
+  const toggleKeyBtn = $('toggleKeyBtn');
+  keyInput.classList.add('masked'); // masked via CSS, not type="password" — keeps Chrome/etc. from treating this as a login field and offering to save it
+  toggleKeyBtn.addEventListener('click', () => {
+    const showing = !keyInput.classList.contains('masked');
+    keyInput.classList.toggle('masked', showing);
+    toggleKeyBtn.textContent = showing ? '👁' : '🙈';
+    toggleKeyBtn.classList.toggle('showing', !showing);
+    toggleKeyBtn.title = showing ? 'Show API key' : 'Hide API key';
+    toggleKeyBtn.setAttribute('aria-label', toggleKeyBtn.title);
+  });
+  const keyStatus = $('keyStatus');
+  const sortModeSel = $('sortMode');
+  const compactToggleBtn = $('compactToggleBtn');
+  const themeToggleBtn = $('themeToggleBtn');
+
+  function applyTheme(){
+    document.documentElement.setAttribute('data-theme', theme);
+    if(themeToggleBtn) themeToggleBtn.textContent = `Theme: ${theme === 'light' ? 'Light' : 'Dark'}`;
+  }
+  function applyCompactToggleLabel(){
+    if(compactToggleBtn) compactToggleBtn.textContent = `Compact numbers: ${compactNumbers ? 'On' : 'Off'}`;
+  }
+  function applyGraphRangeUI(){
+    document.querySelectorAll('.range-pill').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.range === graphRange);
+    });
+  }
+  document.querySelectorAll('.range-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      graphRange = btn.dataset.range;
+      try{ localStorage.setItem(STORE_GRAPH_RANGE, graphRange); }catch(e){ /* non-fatal */ }
+      applyGraphRangeUI();
+      renderStockList();
+    });
+  });
+
+  sortModeSel.addEventListener('change', () => {
+    sortMode = sortModeSel.value;
+    try{ localStorage.setItem(STORE_SORT, sortMode); }catch(e){ /* non-fatal */ }
+    renderStockList();
+  });
+  compactToggleBtn.addEventListener('click', () => {
+    compactNumbers = !compactNumbers;
+    try{ localStorage.setItem(STORE_COMPACT, compactNumbers ? '1' : '0'); }catch(e){ /* non-fatal */ }
+    applyCompactToggleLabel();
+    renderStockList();
+  });
+  themeToggleBtn.addEventListener('click', () => {
+    theme = theme === 'light' ? 'dark' : 'light';
+    try{ localStorage.setItem(STORE_THEME, theme); }catch(e){ /* non-fatal */ }
+    applyTheme();
+  });
+
+  const notifBtn = $('notifBtn');
+  const stockFilter = $('stockFilter');
+  const watchedOnlyToggle = $('watchedOnlyToggle');
+  const stockList = $('stockList');
+  const portfolioSummary = $('portfolioSummary');
+  const signalsBox = $('signalsBox');
+  const incomeSummaryBox = $('incomeSummaryBox');
+  const buyNextBox = $('buyNextBox');
+  const bankBoxBody = $('bankBoxBody');
+  const budgetInput = $('budgetInput');
+  const pollStatus = $('pollStatus');
+  const pollIntervalSel = $('pollInterval');
+  const checkNowBtn = $('checkNowBtn');
+  const tapeTrack = $('tapeTrack');
+  const exportBtn = $('exportBtn');
+  const importBtn = $('importBtn');
+  const importInput = $('importInput');
+  const backupStatus = $('backupStatus');
+  const customKeyBtn = $('customKeyBtn');
+  const syncHoldingsBtn = $('syncHoldingsBtn');
+  const showQrBtn = $('showQrBtn');
+  const qrOutput = $('qrOutput');
+  const scanBtn = $('scanBtn');
+  const qrVideo = $('qrVideo');
+  const qrCanvas = $('qrCanvas');
+  const checkTimerStatus = $('checkTimerStatus');
+  const alertLogList = $('alertLogList');
+  const clearLogBtn = $('clearLogBtn');
+  const resetAllBtn = $('resetAllBtn');
+  const settingsStatus = $('settingsStatus');
+
+  let apiKey = '';
+  let userName = null;
+  let compactNumbers = false; // display pref: e.g. $1.2M instead of $1,196,000
+  let sortMode = 'default';   // display pref: 'default' | 'pctChange' | 'name' | 'distance'
+  let graphRange = '7d';      // how far back each stock's graph shows: '1h' | '24h' | '7d' | '30d' | 'all'
+  let theme = 'dark';         // display pref: 'dark' (default) | 'light'
+  let stocksCache = {};      // id -> {name, acronym, price}
+  let watches = {};          // id -> {name, acronym, low, high, armedHigh, armedLow}
+  let ranges = {};           // id -> {high, low}  (observed since tracking started)
+  let priceHistory = {};     // id -> [[timestamp, price], ...] observed since tracking started, for the live graph
+  let budget = null;
+  let pollTimer = null;
+  let swRegistration = null; // set once the service worker registers; needed for notifications on Chrome/Android
+
+  const STORE_KEY = 'torn-stock-key';
+  const STORE_USERNAME = 'torn-stock-username';
+  const STORE_WATCHES = 'torn-stock-watches';
+  const STORE_RANGES = 'torn-stock-ranges';
+  const STORE_COMPACT = 'torn-stock-compact-numbers';
+  const STORE_SORT = 'torn-stock-sort-mode';
+  const STORE_GRAPH_RANGE = 'torn-stock-graph-range';
+  const STORE_THEME = 'torn-stock-theme';
+  const STORE_HISTORY = 'torn-stock-history';
+  const STORE_TORNSY_HISTORY = 'torn-stock-tornsy-history';
+  const HISTORY_CAP = 300; // max points kept per stock, oldest dropped first
+  const STORE_BUDGET = 'torn-stock-budget';
+  const STORE_WATCHED_ONLY = 'torn-stock-watched-only';
+  const STORE_LAST_PRICES = 'torn-stock-last-prices';
+  const STORE_ALERT_LOG = 'torn-stock-alert-log';
+  let prevVisitPrices = {};   // prices as of your last visit, frozen at load time for comparison
+  let alertLog = [];          // { time, title, body }, newest first, capped at 50
+  let lastCheckTime = null;   // ms epoch of the last successful poll
+  let checkTickTimer = null;  // updates the "last checked / next check" line every second
+  let extremeEvents = {};     // id -> 'low'|'high', reset each poll: a brand-new record just broken this cycle
+  let tickDirection = {};     // id -> 'up'|'down', reset each poll: which way price moved since the previous poll
+
+  function setStatus(el, msg, type){
+    el.textContent = msg || '';
+    el.className = 'status-line' + (type ? ' ' + type : '');
+  }
+
+  async function loadPersisted(){
+    try{
+      const k = localStorage.getItem(STORE_KEY);
+      if(k){ apiKey = k; keyInput.value = apiKey; }
+    }catch(e){ /* storage unavailable */ }
+    try{
+      const un = localStorage.getItem(STORE_USERNAME);
+      if(un){ userName = un; }
+    }catch(e){ /* non-fatal */ }
+    renderWelcomeMessage();
+    try{
+      const cn = localStorage.getItem(STORE_COMPACT);
+      if(cn) compactNumbers = cn === '1';
+    }catch(e){ /* default: off */ }
+    try{
+      const sm = localStorage.getItem(STORE_SORT);
+      if(sm) sortMode = sm;
+    }catch(e){ /* default: name */ }
+    try{
+      const gr = localStorage.getItem(STORE_GRAPH_RANGE);
+      if(gr) graphRange = gr;
+    }catch(e){ /* default: 7d */ }
+    try{
+      const th = localStorage.getItem(STORE_THEME);
+      if(th) theme = th;
+    }catch(e){ /* default: dark */ }
+    applyTheme();
+    applyCompactToggleLabel();
+    applyGraphRangeUI();
+    if(sortModeSel) sortModeSel.value = sortMode;
+    try{
+      const w = localStorage.getItem(STORE_WATCHES);
+      if(w){ watches = JSON.parse(w); }
+    }catch(e){ /* no watches saved yet */ }
+    try{
+      const r = localStorage.getItem(STORE_RANGES);
+      if(r){ ranges = JSON.parse(r); }
+    }catch(e){ /* no ranges saved yet */ }
+    try{
+      const lp = localStorage.getItem(STORE_LAST_PRICES);
+      if(lp){ prevVisitPrices = JSON.parse(lp); }
+    }catch(e){ /* first visit, nothing to compare to yet */ }
+    try{
+      const h = localStorage.getItem(STORE_HISTORY);
+      if(h){ priceHistory = JSON.parse(h); }
+    }catch(e){ /* no graph history saved yet */ }
+    try{
+      const th = localStorage.getItem(STORE_TORNSY_HISTORY);
+      if(th){ tornsyHistory = JSON.parse(th); }
+    }catch(e){ /* no Tornsy history loaded yet */ }
+    // Merge in the seed baseline locally too, so a brand-new visitor sees a graph immediately
+    // rather than waiting on the round trip to the cloud.
+    Object.entries(SEED_HISTORY).forEach(([id, points]) => {
+      if(!Array.isArray(priceHistory[id])) priceHistory[id] = [];
+      const existingT = new Set(priceHistory[id].map(pt => pt[0]));
+      points.forEach(([t, p]) => { if(!existingT.has(t)) priceHistory[id].push([t, p]); });
+      priceHistory[id].sort((a, b) => a[0] - b[0]);
+    });
+    try{
+      const b = localStorage.getItem(STORE_BUDGET);
+      if(b){ budget = parseFloat(b); budgetInput.value = budget; }
+    }catch(e){ /* no budget saved yet */ }
+    try{
+      const wo = localStorage.getItem(STORE_WATCHED_ONLY);
+      watchedOnlyToggle.checked = !!wo;
+    }catch(e){ /* default unchecked */ }
+    try{
+      const al = localStorage.getItem(STORE_ALERT_LOG);
+      if(al){ alertLog = JSON.parse(al); }
+    }catch(e){ /* no history yet */ }
+    renderAlertLog();
+    startCheckTimerTick();
+    if(apiKey){
+      setStatus(keyStatus, 'Key loaded from this device.', 'ok');
+      await refreshStocks(true);
+      if(!userName) fetchUserName();
+    }
+  }
+
+  function persistWatches(){
+    try{ localStorage.setItem(STORE_WATCHES, JSON.stringify(watches)); }
+    catch(e){ console.error('Could not save watchlist', e); }
+  }
+
+  // ===================== CLOUD SETUP (shared/crowdsourced price history) =====================
+  // Fill this in with YOUR OWN Firebase project's config (Firebase console → Project settings →
+  // General → "Your apps" → web app → the firebaseConfig object). These values are meant to be
+  // public — they identify your project, they are not secrets — access is controlled by the
+  // Realtime Database Rules you set in the Firebase console, not by hiding this object.
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyB_Pkr96vfnlBTV4HlRJ5Gy2LOHvTr0AHs",
+    databaseURL: "https://torn-stock-alert-d6c9c-default-rtdb.firebaseio.com",
+    projectId: "torn-stock-alert-d6c9c"
+  };
+  const CLOUD_PRUNE_CAP = 500;   // soft cap on stored points per stock in the cloud
+  const CLOUD_MERGE_CAP = 300;   // max points per stock merged into the on-screen graph
+
+  let cloudHistory = {};   // id -> [[t, p], ...] as received live from Firebase
+  let tornsyHistory = {};  // id -> [[t, p], ...] real historical prices from Tornsy.com, loaded manually on request
+  let tornsyLoading = false;
+  let cloudEnabled = false;
+  let cloudDb = null;
+
+  // Seed history — real price checks captured from an earlier live snapshot of this app,
+  // used as a starting base so a brand-new visitor (new API key, first time using the app)
+  // doesn't see an empty graph. Written with deterministic keys so re-running this is safe
+  // and never creates duplicates; it only fills in these specific points if missing.
+  const SEED_HISTORY = {"32":[[1789399641765,357.95],[1789399778755,357.72],[1789399898159,357.7],[1789400018196,357.73],[1789400138763,357.76],[1789400258829,357.85],[1789400487372,358.05],[1789403788451,358.02],[1789403910699,358.03],[1789425045793,357.93],[1789427613630,358.0],[1789433157767,357.86],[1789433314655,357.9],[1789437286262,357.16],[1789438592027,357.74],[1789465116910,357.35],[1789472295564,357.44],[1789481295147,357.18],[1789482011504,357.13],[1789493670608,357.77],[1789493930192,357.69],[1789494059232,357.68],[1789536346499,359.18],[1789538639324,359.26],[1789550343611,358.4],[1789550679496,358.46],[1789550802609,358.51],[1789550923540,358.46],[1789551187163,358.53]],"27":[[1789399641765,484.11],[1789399778755,484.0],[1789399898159,483.98],[1789400018196,483.99],[1789400258829,484.04],[1789400487372,484.1],[1789403788451,484.6],[1789403910699,484.54],[1789425045793,485.04],[1789427613630,485.09],[1789433157767,484.48],[1789433314655,484.39],[1789437286262,483.67],[1789438592027,483.7],[1789465116910,484.89],[1789472295564,485.11],[1789481295147,484.72],[1789482011504,484.62],[1789493670608,484.05],[1789493930192,484.06],[1789494059232,484.04],[1789536346499,484.35],[1789538639324,484.76],[1789550343590,484.52],[1789550679493,484.73],[1789550744917,484.74],[1789550802607,484.71],[1789550923537,484.82],[1789551187162,484.67]],"10":[[1789399641765,832.25],[1789399778755,832.46],[1789399898159,832.47],[1789400018196,832.42],[1789400138763,832.45],[1789400258829,832.52],[1789400487372,832.35],[1789403788451,832.48],[1789403910699,832.46],[1789425045793,829.77],[1789427613630,829.73],[1789433157766,828.89],[1789433314655,828.88],[1789437286262,829.36],[1789438592027,829.7],[1789465116910,830.66],[1789472295564,831.63],[1789481295147,832.28],[1789482011504,832.51],[1789493670608,832.54],[1789493930192,832.81],[1789494059232,832.69],[1789536346498,833.9],[1789538639324,833.45],[1789550343551,831.8],[1789550679487,831.81],[1789550744910,831.77],[1789550802602,831.9],[1789550923518,832.31],[1789551187158,832.63]],"19":[[1789399641765,288.84],[1789399778755,288.81],[1789399898159,288.86],[1789400018196,288.84],[1789400258829,288.82],[1789400487372,288.83],[1789403788451,289.17],[1789403910699,289.19],[1789425045793,289.33],[1789427613630,289.32],[1789433157767,288.94],[1789433314655,288.88],[1789437286262,288.92],[1789438592027,288.89],[1789465116910,287.72],[1789472295564,287.47],[1789481295147,287.7],[1789482011504,287.85],[1789493670608,288.12],[1789493930192,288.14],[1789536346498,287.36],[1789538639324,286.95],[1789550343566,287.16],[1789550679490,287.25],[1789550744913,287.26],[1789550923530,287.28],[1789551187160,287.35]],"21":[[1789399641765,316.53],[1789399898159,316.49],[1789400018196,316.59],[1789400487372,316.56],[1789403788451,316.59],[1789403910699,316.54],[1789425045793,316.53],[1789427613630,316.49],[1789433157767,316.53],[1789433314655,316.65],[1789437286262,316.5],[1789438592027,316.55],[1789465116910,316.4],[1789472295564,317.48],[1789481295147,317.74],[1789482011504,317.7],[1789493670608,316.56],[1789493930192,316.6],[1789494059232,316.63],[1789536346498,315.92],[1789538639324,316.08],[1789550343576,316.04],[1789550679491,316.12],[1789550744914,316.16],[1789550802606,316.14],[1789550923533,316.09]],"28":[[1789399641765,658.31],[1789399778755,658.17],[1789399898159,658.15],[1789400018196,658.12],[1789400138763,658.18],[1789400258829,658.23],[1789400487372,658.21],[1789403788451,657.79],[1789403910699,657.91],[1789425045793,656.81],[1789427613630,656.92],[1789433157767,657.65],[1789433314655,657.43],[1789437286262,656.87],[1789438592027,656.74],[1789465116910,655.58],[1789472295564,655.45],[1789481295147,655.39],[1789482011504,655.52],[1789493670608,654.89],[1789493930192,655.06],[1789494059232,655.12],[1789536346499,654.61],[1789538639324,654.71],[1789550343593,655.38],[1789550679494,655.46],[1789550744920,655.48],[1789550802608,655.46],[1789551187162,655.52]],"15":[[1789399641765,909.07],[1789399778755,909.15],[1789400018196,909.23],[1789400138763,908.83],[1789400258829,908.86],[1789400487372,908.92],[1789403788451,908.51],[1789403910699,908.1],[1789425045793,905.29],[1789427613630,903.93],[1789433157766,902.6],[1789433314655,902.65],[1789437286262,902.83],[1789438592027,902.91],[1789465116910,898.79],[1789472295564,899.18],[1789481295147,897.96],[1789482011504,897.76],[1789493670608,898.33],[1789493930192,898.45],[1789494059232,898.49],[1789536346498,897.8],[1789538639324,897.51],[1789550343560,898.0],[1789550679489,898.25],[1789550802604,898.32],[1789550923520,898.47],[1789551187160,899.34]],"6":[[1789399641764,331.22],[1789399778755,331.28],[1789399898159,331.25],[1789400018196,331.13],[1789400138763,331.27],[1789400258829,331.16],[1789400487372,331.26],[1789403788451,331.3],[1789403910699,331.34],[1789425045793,332.07],[1789427613630,331.81],[1789433157766,331.32],[1789433314655,331.38],[1789437286262,331.49],[1789438592027,331.38],[1789465116910,331.12],[1789472295563,330.65],[1789481295147,330.64],[1789482011504,330.57],[1789493670608,330.42],[1789493930192,330.34],[1789536346498,331.14],[1789538639324,331.25],[1789550343533,331.66],[1789550679484,331.48],[1789550744908,331.41],[1789550802601,331.44],[1789550923506,331.43],[1789551187156,331.37]],"33":[[1789399641765,425.68],[1789399778755,425.59],[1789399898159,425.6],[1789400138763,425.62],[1789400258829,425.55],[1789400487372,425.63],[1789403788451,425.87],[1789403910699,425.8],[1789425045793,426.12],[1789427613630,425.9],[1789433157767,425.86],[1789433314655,425.87],[1789437286262,425.61],[1789438592027,425.58],[1789465116910,424.66],[1789472295564,425.03],[1789481295147,425.01],[1789482011504,424.92],[1789493670608,425.15],[1789493930192,425.22],[1789536346499,424.67],[1789538639324,424.97],[1789550343612,425.12],[1789550679497,425.01],[1789550802610,425.09],[1789550923540,425.0],[1789551187163,425.11]],"22":[[1789399641765,270.74],[1789399778755,270.76],[1789400018196,270.78],[1789400258829,270.79],[1789400487372,270.76],[1789403788451,270.53],[1789425045793,270.76],[1789427613630,270.73],[1789433157767,270.93],[1789433314655,270.85],[1789437286262,271.04],[1789438592027,271.03],[1789465116910,270.51],[1789472295564,270.27],[1789481295147,270.14],[1789482011504,270.19],[1789493670608,270.28],[1789493930192,270.25],[1789494059232,270.26],[1789536346498,270.63],[1789538639324,270.69],[1789550343577,270.68],[1789550679491,270.69],[1789550744915,270.71],[1789550802607,270.73],[1789550923534,270.69],[1789551187161,270.74]],"14":[[1789399641765,136.18],[1789400018196,136.14],[1789400258829,136.15],[1789400487372,136.13],[1789403788451,136.21],[1789425045793,137.09],[1789427613630,136.85],[1789433157766,136.91],[1789433314655,136.94],[1789437286262,137.01],[1789438592027,137.02],[1789465116910,137.3],[1789472295564,137.43],[1789481295147,137.34],[1789482011504,137.33],[1789493670608,137.55],[1789493930192,137.51],[1789494059232,137.5],[1789536346498,137.55],[1789538639324,137.6],[1789550343559,137.51],[1789550679489,137.54],[1789551187160,137.53]],"5":[[1789399641764,176.89],[1789399778755,176.93],[1789399898159,176.91],[1789400018196,176.92],[1789400138763,176.95],[1789400258829,176.97],[1789400487372,177.0],[1789403788451,177.03],[1789403910699,177.06],[1789425045793,177.01],[1789427613630,177.03],[1789433157766,177.02],[1789433314655,177.0],[1789437286262,177.03],[1789438592027,177.14],[1789465116910,176.91],[1789472295563,176.83],[1789481295147,176.95],[1789493670608,177.11],[1789493930192,177.1],[1789494059232,177.11],[1789536346498,177.55],[1789538639324,177.5],[1789550343531,177.66],[1789550679484,177.64],[1789550802600,177.63],[1789551187156,177.59]],"26":[[1789399641765,545.89],[1789399898159,545.73],[1789400138763,545.75],[1789400487372,545.42],[1789403788451,545.76],[1789425045793,546.98],[1789427613630,546.87],[1789433157767,546.81],[1789433314655,546.77],[1789437286262,547.47],[1789438592027,547.59],[1789465116910,547.28],[1789472295564,548.34],[1789481295147,548.66],[1789482011504,548.73],[1789493670608,549.44],[1789493930192,549.39],[1789494059232,549.25],[1789536346499,550.4],[1789538639324,549.91],[1789550343589,547.3],[1789550679492,547.01],[1789550744917,547.0],[1789550802607,547.21],[1789550923536,547.29],[1789551187161,547.48]],"4":[[1789399641764,475.69],[1789399778755,475.76],[1789399898159,475.86],[1789400018196,475.9],[1789400138763,475.85],[1789400258829,475.8],[1789400487372,475.83],[1789403788451,476.22],[1789403910699,476.24],[1789425045793,476.53],[1789427613630,476.49],[1789433157766,476.05],[1789437286262,476.39],[1789438592027,475.83],[1789465116910,473.45],[1789472295563,473.71],[1789481295147,473.4],[1789482011504,473.47],[1789493670608,473.31],[1789493930192,473.23],[1789494059232,473.17],[1789536346498,472.93],[1789538639324,472.5],[1789550343529,472.32],[1789550679483,472.2],[1789550744907,472.22],[1789550802600,472.21],[1789550923504,472.18],[1789551187156,472.24]],"34":[[1789399641765,110.92],[1789399898159,110.9],[1789400018196,110.92],[1789400138763,110.93],[1789400258829,110.94],[1789400487372,110.92],[1789403788451,110.86],[1789425045793,110.74],[1789427613630,110.76],[1789433157767,110.78],[1789433314655,110.8],[1789437286262,110.68],[1789438592027,110.7],[1789465116910,110.89],[1789472295564,110.83],[1789481295147,110.84],[1789482011504,110.81],[1789493670608,110.59],[1789493930192,110.6],[1789536346499,109.85],[1789538639324,109.81],[1789550343629,109.9],[1789550679497,109.93],[1789550744922,109.92],[1789551187163,109.91]],"17":[[1789399641765,580.23],[1789399778755,580.14],[1789399898159,580.12],[1789400018196,580.22],[1789400138763,580.2],[1789400258829,580.14],[1789400487372,580.55],[1789403788451,580.99],[1789403910699,580.93],[1789425045793,582.35],[1789427613630,582.77],[1789433157767,582.76],[1789433314655,582.83],[1789437286262,582.67],[1789438592027,582.26],[1789465116910,581.36],[1789472295564,581.09],[1789481295147,581.21],[1789482011504,581.12],[1789493670608,579.97],[1789493930192,580.01],[1789536346498,580.68],[1789538639324,580.53],[1789550343562,580.97],[1789550679490,581.0],[1789550744912,580.98],[1789550802605,581.02],[1789550923523,580.98],[1789551187160,580.93]],"29":[[1789399641765,859.35],[1789399778755,859.16],[1789399898159,859.27],[1789400018196,859.36],[1789400138763,859.54],[1789400258829,859.46],[1789403788451,858.94],[1789403910699,858.91],[1789425045793,858.07],[1789427613630,857.76],[1789433157767,858.7],[1789433314655,859.08],[1789437286262,858.27],[1789438592027,858.81],[1789465116910,857.23],[1789472295564,857.88],[1789481295147,857.67],[1789482011504,857.77],[1789493670608,858.07],[1789493930192,858.3],[1789494059232,858.28],[1789536346499,856.96],[1789538639324,856.08],[1789550343595,858.48],[1789550679495,858.38],[1789550744921,858.44],[1789550802608,858.54],[1789550923538,858.71],[1789551187162,858.94]],"11":[[1789399641765,286.51],[1789399898159,286.55],[1789400018196,286.54],[1789400138763,286.42],[1789400258829,286.44],[1789403788451,286.23],[1789403910699,286.19],[1789425045793,287.1],[1789427613630,286.97],[1789433157766,287.18],[1789433314655,287.09],[1789437286262,287.34],[1789438592027,287.2],[1789465116910,286.91],[1789472295564,286.87],[1789481295147,286.65],[1789482011504,286.54],[1789493670608,286.56],[1789494059232,286.51],[1789536346498,287.64],[1789538639324,287.52],[1789550343553,287.34],[1789550679487,287.29],[1789550744910,287.27],[1789550802602,287.29],[1789550923519,287.27],[1789551187158,287.21]],"24":[[1789399641765,554.1],[1789399778755,554.07],[1789399898159,554.11],[1789400138763,554.12],[1789400258829,554.04],[1789400487372,554.12],[1789403788451,554.16],[1789403910699,554.17],[1789425045793,552.44],[1789427613630,552.63],[1789433157767,553.15],[1789433314655,553.31],[1789437286262,553.08],[1789438592027,552.83],[1789465116910,553.3],[1789472295564,553.7],[1789481295147,554.36],[1789482011504,554.04],[1789493670608,554.24],[1789493930192,554.21],[1789494059232,554.08],[1789536346499,552.09],[1789538639324,552.34],[1789550343587,549.93],[1789550679492,550.14],[1789550744916,550.07],[1789550923535,550.08],[1789551187161,550.45]],"18":[[1789399641765,636.71],[1789399778755,636.73],[1789399898159,636.63],[1789400018196,636.6],[1789400138763,636.42],[1789400258829,636.54],[1789400487372,636.38],[1789403788451,636.2],[1789403910699,636.07],[1789425045793,637.71],[1789427613630,637.45],[1789433157767,637.7],[1789433314655,637.52],[1789437286262,637.5],[1789438592027,637.43],[1789465116910,637.76],[1789472295564,638.5],[1789481295147,639.05],[1789482011504,639.03],[1789493670608,637.2],[1789493930192,637.66],[1789494059232,637.55],[1789536346498,638.48],[1789538639324,638.39],[1789550343564,637.13],[1789550679490,637.11],[1789550744913,637.08],[1789550923529,637.03],[1789551187160,636.96]],"35":[[1789399641765,81.24],[1789399778755,81.23],[1789399898159,81.24],[1789400018196,81.27],[1789400258829,81.26],[1789403788451,81.28],[1789403910699,81.26],[1789425045793,81.43],[1789427613630,81.4],[1789433157767,81.58],[1789433314655,81.54],[1789437286262,81.48],[1789438592027,81.51],[1789465116910,81.42],[1789472295564,81.36],[1789481295147,81.32],[1789493670608,81.31],[1789493930192,81.32],[1789494059232,81.35],[1789536346499,81.17],[1789538639324,81.12],[1789550343632,81.16],[1789550679497,81.17],[1789551187163,81.18]],"16":[[1789399641765,743.4],[1789399778755,743.37],[1789399898159,743.39],[1789400018196,743.3],[1789400138763,743.29],[1789400258829,743.26],[1789400487372,743.35],[1789403788451,743.01],[1789403910699,742.98],[1789425045793,742.92],[1789427613630,741.9],[1789433157767,741.84],[1789437286262,741.49],[1789438592027,741.13],[1789465116910,742.88],[1789472295564,743.81],[1789481295147,743.29],[1789482011504,743.33],[1789493670608,742.38],[1789493930192,742.33],[1789494059232,742.27],[1789536346498,742.14],[1789538639324,741.63],[1789550343561,742.85],[1789550679489,742.96],[1789550744911,743.05],[1789550802605,743.02],[1789550923521,743.06]],"3":[[1789399641764,661.87],[1789399778755,662.09],[1789399898159,662.12],[1789400018196,662.03],[1789400138763,662.21],[1789400487372,662.06],[1789403788451,662.09],[1789403910699,662.07],[1789425045793,662.19],[1789427613630,661.72],[1789433157766,661.96],[1789433314655,662.13],[1789437286262,662.34],[1789438592027,661.66],[1789465116910,662.49],[1789472295563,662.34],[1789481295147,663.1],[1789482011504,662.99],[1789493670608,663.39],[1789493930192,663.2],[1789494059232,663.12],[1789536346498,663.0],[1789538639324,662.92],[1789550343521,661.39],[1789550679482,661.52],[1789550744906,661.55],[1789550802599,661.51],[1789550923503,661.46],[1789551187156,661.5]],"13":[[1789399641765,545.07],[1789399778755,544.96],[1789399898159,545.02],[1789400018196,545.08],[1789400138763,545.0],[1789400258829,545.03],[1789400487372,544.92],[1789403788451,544.71],[1789403910699,544.8],[1789425045793,545.55],[1789427613630,545.77],[1789433157766,544.61],[1789433314655,544.49],[1789437286262,544.67],[1789438592027,545.05],[1789465116910,545.69],[1789472295564,546.78],[1789481295147,547.09],[1789482011504,546.71],[1789493670608,546.74],[1789493930192,546.82],[1789494059232,546.76],[1789536346498,545.26],[1789538639324,545.07],[1789550343557,546.08],[1789550679488,546.12],[1789550802604,546.07],[1789550923520,545.95],[1789551187159,545.92]],"12":[[1789399641765,228.63],[1789399778755,228.6],[1789399898159,228.61],[1789400018196,228.63],[1789400138763,228.61],[1789400258829,228.58],[1789400487372,228.62],[1789403788451,228.83],[1789403910699,228.84],[1789425045793,229.24],[1789427613630,229.17],[1789433157766,229.15],[1789433314655,229.21],[1789437286262,229.12],[1789465116910,228.52],[1789472295564,228.77],[1789481295147,228.36],[1789482011504,228.33],[1789493670608,228.02],[1789493930192,228.11],[1789494059232,228.02],[1789536346498,227.91],[1789538639324,228.06],[1789550343554,228.11],[1789550679488,228.09],[1789550802603,228.06],[1789551187159,228.08]],"23":[[1789399641765,148.79],[1789399778755,148.78],[1789400018196,148.79],[1789400138763,148.81],[1789400258829,148.83],[1789400487372,148.86],[1789403788451,148.75],[1789403910699,148.74],[1789425045793,148.92],[1789427613630,148.87],[1789433157767,148.91],[1789437286262,148.88],[1789438592027,148.86],[1789465116910,148.71],[1789472295564,148.64],[1789481295147,148.33],[1789482011504,148.29],[1789493670608,148.1],[1789493930192,148.16],[1789536346498,147.83],[1789538639324,147.81],[1789550343579,147.85],[1789550679492,147.82],[1789550744915,147.83],[1789550923535,147.8],[1789551187161,147.78]],"9":[[1789399641765,333.41],[1789399778755,333.39],[1789400138763,333.36],[1789400258829,333.38],[1789400487372,333.37],[1789403788451,333.5],[1789403910699,333.48],[1789425045793,333.6],[1789427613630,333.52],[1789433157766,333.34],[1789433314655,333.3],[1789437286262,333.03],[1789438592027,332.84],[1789465116910,333.04],[1789472295564,332.79],[1789481295147,331.96],[1789482011504,332.25],[1789493670608,332.66],[1789493930192,332.82],[1789536346498,332.5],[1789538639324,332.47],[1789550343543,332.91],[1789550679486,332.8],[1789550802602,332.81],[1789550923514,332.83],[1789551187158,332.96]],"1":[[1789399641764,1174.46],[1789399778755,1174.67],[1789399898159,1174.49],[1789400018195,1174.57],[1789400138763,1174.87],[1789400258829,1175.15],[1789400487372,1175.0],[1789403788451,1173.95],[1789403910699,1173.85],[1789425045793,1175.9],[1789427613630,1176.22],[1789433157766,1177.63],[1789433314655,1177.44],[1789437286262,1175.66],[1789438592027,1174.93],[1789465116910,1172.59],[1789472295563,1171.95],[1789481295147,1172.23],[1789482011504,1172.03],[1789493670608,1173.02],[1789494059232,1173.2],[1789536346498,1174.04],[1789538639324,1175.31],[1789550343490,1174.38],[1789550679473,1174.67],[1789550744903,1174.69],[1789550802598,1174.74],[1789550923481,1174.78],[1789551187141,1175.33]],"31":[[1789399641765,513.79],[1789399778755,513.86],[1789399898159,513.79],[1789400018196,513.75],[1789400138763,513.61],[1789400258829,513.64],[1789400487372,513.65],[1789403788451,513.39],[1789403910699,513.4],[1789425045793,513.87],[1789427613630,514.07],[1789433157767,513.75],[1789433314655,513.74],[1789437286262,513.72],[1789438592027,513.58],[1789465116910,512.86],[1789472295564,512.3],[1789481295147,512.63],[1789482011504,512.51],[1789493670608,512.3],[1789493930192,512.36],[1789494059232,512.39],[1789536346499,511.52],[1789538639324,511.26],[1789550343609,511.27],[1789550679496,511.46],[1789550744922,511.47],[1789550802609,511.41],[1789550923539,511.37],[1789551187162,511.57]],"7":[[1789399641764,387.55],[1789399778755,387.58],[1789399898159,387.53],[1789400018196,387.48],[1789400138763,387.54],[1789400258829,387.68],[1789400487372,387.72],[1789403788451,387.89],[1789403910699,387.91],[1789425045793,388.5],[1789427613630,388.65],[1789433157766,388.34],[1789433314655,388.29],[1789437286262,388.39],[1789438592027,388.7],[1789465116910,388.34],[1789472295563,388.42],[1789481295147,388.2],[1789482011504,388.16],[1789493670608,388.3],[1789493930192,388.29],[1789494059232,388.25],[1789536346498,388.34],[1789538639324,388.08],[1789550343538,388.06],[1789550679485,388.05],[1789550744909,387.99],[1789550802601,388.07],[1789550923508,388.04],[1789551187157,388.03]],"2":[[1789399641764,1170.9],[1789399778755,1170.97],[1789399898159,1170.98],[1789400138763,1170.46],[1789400258829,1170.53],[1789400487372,1170.69],[1789403788451,1170.17],[1789403910699,1170.03],[1789425045793,1169.49],[1789427613630,1168.95],[1789433157766,1169.21],[1789433314655,1169.25],[1789437286262,1169.52],[1789438592027,1168.92],[1789465116910,1168.19],[1789472295563,1168.49],[1789481295147,1168.8],[1789482011504,1168.72],[1789493670608,1169.65],[1789493930192,1169.7],[1789494059232,1169.63],[1789536346498,1169.88],[1789538639324,1170.35],[1789550343516,1170.54],[1789550679476,1170.78],[1789550744905,1170.73],[1789550802599,1170.84],[1789550923502,1170.9],[1789551187155,1170.3]],"20":[[1789399641765,300.86],[1789399778755,300.91],[1789399898159,300.86],[1789400018196,300.87],[1789400138763,300.9],[1789400258829,301.0],[1789400487372,301.18],[1789403788451,301.28],[1789403910699,301.25],[1789425045793,301.99],[1789427613630,302.1],[1789433157767,302.35],[1789433314655,302.32],[1789437286262,302.1],[1789438592027,302.18],[1789465116910,302.15],[1789472295564,302.24],[1789481295147,301.86],[1789482011504,301.78],[1789493670608,301.79],[1789493930192,301.78],[1789494059232,301.76],[1789536346498,301.21],[1789538639324,301.42],[1789550343570,302.1],[1789550679491,302.13],[1789550744914,302.15],[1789550923532,302.06],[1789551187161,301.96]],"25":[[1789399641765,107.93],[1789399778755,107.92],[1789399898159,107.89],[1789400258829,107.88],[1789400487372,107.87],[1789403788451,107.88],[1789425045793,107.78],[1789427613630,107.83],[1789433157767,107.91],[1789437286262,107.82],[1789465116910,107.71],[1789472295564,107.82],[1789481295147,107.49],[1789482011504,107.51],[1789493670608,107.49],[1789493930192,107.5],[1789494059232,107.52],[1789538639324,107.54],[1789550343588,107.51],[1789550679492,107.52],[1789551187161,107.48]],"30":[[1789399641765,803.28],[1789399778755,803.43],[1789399898159,803.42],[1789400138763,803.5],[1789400258829,803.59],[1789400487372,803.49],[1789403788451,803.37],[1789403910699,803.33],[1789425045793,804.29],[1789427613630,804.19],[1789433157767,804.52],[1789433314655,804.65],[1789437286262,804.14],[1789438592027,803.72],[1789465116910,806.76],[1789472295564,807.39],[1789481295147,807.31],[1789482011504,807.08],[1789493670608,808.24],[1789494059232,808.28],[1789536346499,808.24],[1789538639324,808.55],[1789550343603,808.22],[1789550679495,807.98],[1789550744921,807.93],[1789550802609,807.91],[1789550923538,808.07],[1789551187162,808.32]],"8":[[1789399641764,52.44],[1789400138763,52.45],[1789400258829,52.46],[1789400487372,52.47],[1789403788451,52.57],[1789425045793,52.66],[1789427613630,52.67],[1789433157766,52.72],[1789433314655,52.71],[1789437286262,52.66],[1789465116910,52.7],[1789472295563,52.58],[1789481295147,52.63],[1789482011504,52.62],[1789493670608,52.66],[1789493930192,52.64],[1789536346498,52.63],[1789538639324,52.61],[1789550343540,52.55],[1789550679486,52.57],[1789550923512,52.58],[1789551187157,52.57]]};;
+
+  const STORE_SEEDED = 'torn-stock-history-seeded';
+  const STORE_TORNSY_PROMPT_SEEN = 'torn-stock-tornsy-prompt-seen';
+
+  function seedCloudHistoryOnce(){
+    if(!cloudEnabled) return;
+    try{
+      if(localStorage.getItem(STORE_SEEDED)) return; // already ensured on this browser
+    }catch(e){ return; }
+    Object.entries(SEED_HISTORY).forEach(([id, points]) => {
+      points.forEach(([t, p], i) => {
+        // deterministic key ("seed_0", "seed_1", ...) — safe to write repeatedly, never duplicates
+        cloudDb.ref(`history/${id}/seed_${i}`).set({ t, p });
+      });
+    });
+    try{ localStorage.setItem(STORE_SEEDED, '1'); }catch(e){ /* non-fatal */ }
+  }
+
+  const STORE_BACKFILLED = 'torn-stock-history-backfilled';
+
+  function backfillLocalHistoryToCloud(){
+    if(!cloudEnabled) return;
+    try{
+      if(localStorage.getItem(STORE_BACKFILLED)) return; // already done on this browser
+    }catch(e){ /* if storage is unavailable, just skip backfill rather than repeat it forever */ return; }
+    Object.entries(priceHistory).forEach(([id, arr]) => {
+      if(!Array.isArray(arr)) return;
+      arr.forEach(pt => { if(Array.isArray(pt) && pt.length === 2) pushHistoryToCloud(id, pt[0], pt[1]); });
+    });
+    try{ localStorage.setItem(STORE_BACKFILLED, '1'); }catch(e){ /* non-fatal */ }
+  }
+
+  function initCloud(){
+    if(FIREBASE_CONFIG.apiKey.startsWith('PASTE_') ) return; // not configured yet — app still works fully locally
+    try{
+      firebase.initializeApp(FIREBASE_CONFIG);
+      cloudDb = firebase.database();
+      cloudEnabled = true;
+      seedCloudHistoryOnce();
+      backfillLocalHistoryToCloud();
+      cloudDb.ref('history').on('value', snap => {
+        const val = snap.val() || {};
+        const next = {};
+        Object.entries(val).forEach(([id, points]) => {
+          const arr = Object.values(points || {})
+            .filter(pt => pt && typeof pt.t === 'number' && typeof pt.p === 'number')
+            .sort((a, b) => a.t - b.t)
+            .map(pt => [pt.t, pt.p]);
+          next[id] = arr;
+        });
+        cloudHistory = next;
+        renderStockList();
+      });
+    }catch(e){
+      console.error('Cloud sync failed to start — the app will keep working with local-only history.', e);
+      cloudEnabled = false;
+    }
+  }
+
+  function pushHistoryToCloud(id, t, p){
+    if(!cloudEnabled) return;
+    cloudDb.ref(`history/${id}`).push({ t, p });
+    // Best-effort pruning so one stock's node doesn't grow forever. Any connected browser
+    // can do this — it's not perfectly race-free with many simultaneous users, but is fine
+    // at small scale.
+    if(Math.random() < 0.05){
+      cloudDb.ref(`history/${id}`).orderByChild('t').limitToFirst(50).once('value', snap => {
+        const val = snap.val() || {};
+        const keys = Object.keys(val);
+        if(keys.length > CLOUD_PRUNE_CAP){
+          // only trim if this node is actually over the cap overall; re-check count first
+          cloudDb.ref(`history/${id}`).once('value', full => {
+            const count = full.numChildren ? full.numChildren() : Object.keys(full.val() || {}).length;
+            if(count > CLOUD_PRUNE_CAP){
+              keys.forEach(k => cloudDb.ref(`history/${id}/${k}`).remove());
+            }
+          });
+        }
+      });
+    }
+  }
+
+  // Merge this browser's own locally-observed points with everyone else's cloud points for one stock.
+  // Defensively coerces anything unexpected (not an array, malformed pairs) to empty rather than
+  // throwing, since bad history data should never be able to break the whole app.
+  function asPointArray(x){
+    if(!Array.isArray(x)) return [];
+    return x.filter(pt => Array.isArray(pt) && pt.length === 2 && Number.isFinite(pt[0]) && Number.isFinite(pt[1]));
+  }
+
+  const SELL_FEE_RATE = 0.001; // Torn charges 0.1% on stock sales — confirmed from the in-game sell confirmation
+  function netSellProceeds(shares, price){
+    return shares * price * (1 - SELL_FEE_RATE);
+  }
+
+  function fmtMoney(n){
+    n = Number(n);
+    if(!Number.isFinite(n)) return String(n);
+    if(compactNumbers){
+      return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 2 }).format(n);
+    }
+    return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  }
+
+  function fmtNum(n){
+    n = Number(n);
+    if(!Number.isFinite(n)) return String(n);
+    if(compactNumbers){
+      return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(n);
+    }
+    return n.toLocaleString();
+  }
+
+  function mergedHistoryFor(id){
+    const local = asPointArray(priceHistory[id]);
+    const cloud = asPointArray(cloudHistory[id]);
+    const map = new Map(); // dedupe by timestamp
+    local.concat(cloud).forEach(([t, p]) => map.set(t, p));
+    const merged = Array.from(map.entries()).sort((a, b) => a[0] - b[0]);
+    return merged.length > CLOUD_MERGE_CAP ? merged.slice(merged.length - CLOUD_MERGE_CAP) : merged;
+  }
+
+  function persistRanges(){
+    try{ localStorage.setItem(STORE_RANGES, JSON.stringify(ranges)); }
+    catch(e){ console.error('Could not save ranges', e); }
+  }
+
+  function recordHistory(){
+    Object.entries(stocksCache).forEach(([id, s]) => {
+      const p = Number(s.price);
+      if(!Array.isArray(priceHistory[id])) priceHistory[id] = [];
+      const arr = priceHistory[id];
+      const last = arr[arr.length - 1];
+      if(!last || last[1] !== p){
+        const t = Date.now();
+        arr.push([t, p]);
+        if(arr.length > HISTORY_CAP) arr.splice(0, arr.length - HISTORY_CAP);
+        pushHistoryToCloud(id, t, p);
+      }
+    });
+  }
+
+  function persistHistory(){
+    try{ localStorage.setItem(STORE_HISTORY, JSON.stringify(priceHistory)); }
+    catch(e){ console.error('Could not save price history', e); }
+  }
+
+  // Rough 24h % change using whatever price history is available (own + shared). Returns null
+  // when there's no point old enough yet to compare against.
+  function pctChange24h(id, currentPrice){
+    const hist = cloudEnabled ? mergedHistoryFor(id) : asPointArray(priceHistory[id]);
+    if(!hist || hist.length < 2) return null;
+    const cutoff = Date.now() - 24 * 3600 * 1000;
+    // find the point closest to (but not after) 24h ago; if the oldest point is newer than
+    // that, there's not enough history yet to answer this.
+    if(hist[0][0] > cutoff) return null;
+    let ref = hist[0];
+    for(const pt of hist){
+      if(pt[0] > cutoff) break;
+      ref = pt;
+    }
+    if(!ref || !ref[1]) return null;
+    return ((currentPrice - ref[1]) / ref[1]) * 100;
+  }
+
+  // Real historical prices from Tornsy.com — a free, public, no-key API run by the Torn
+  // community (documented at https://tornsy.com/api), openly built for exactly this use.
+  // This is only ever called from an explicit button click, once per click — never on a timer
+  // or tied into the automatic polling loop.
+  async function fetchTornsyHistoryFor(id, acronym){
+    try{
+      const res = await fetch(`https://tornsy.com/api/${encodeURIComponent(acronym.toLowerCase())}?interval=h1&limit=168`);
+      if(!res.ok) return false;
+      const json = await res.json();
+      const rows = Array.isArray(json.data) ? json.data : [];
+      // OHLC row shape: [timestamp, open, high, low, close, total_shares, marketcap?]
+      const points = rows.map(row => {
+        const t = Number(row[0]) * 1000;
+        const close = Number(row[4]);
+        return (Number.isFinite(t) && Number.isFinite(close)) ? [t, close] : null;
+      }).filter(Boolean);
+      if(points.length){ tornsyHistory[id] = points; return true; }
+      return false;
+    }catch(e){
+      console.error('Tornsy history fetch failed for', acronym, e);
+      return false;
+    }
+  }
+
+  function dismissTornsyPrompt(){
+    const el = $('tornsyPrompt');
+    if(el) el.hidden = true;
+    try{ localStorage.setItem(STORE_TORNSY_PROMPT_SEEN, '1'); }catch(e){ /* non-fatal */ }
+  }
+
+  function maybeShowTornsyPrompt(){
+    const el = $('tornsyPrompt');
+    if(!el) return;
+    let seen = false;
+    try{ seen = !!localStorage.getItem(STORE_TORNSY_PROMPT_SEEN); }catch(e){ /* assume not seen */ }
+    const hasStocks = Object.keys(stocksCache).length > 0;
+    const hasTornsyData = Object.keys(tornsyHistory).length > 0;
+    el.hidden = !(hasStocks && !hasTornsyData && !seen && !tornsyLoading);
+  }
+
+  async function loadRealHistoryFromTornsy(){
+    if(tornsyLoading) return;
+    const ids = Object.keys(stocksCache);
+    if(!ids.length){
+      setStatus(settingsStatus, 'Connect your API key and load stocks first.', 'err');
+      return;
+    }
+    tornsyLoading = true;
+    const btn = $('loadTornsyBtn');
+    const promptBtn = $('tornsyPromptLoadBtn');
+    if(btn) btn.disabled = true;
+    if(promptBtn){ promptBtn.disabled = true; promptBtn.textContent = 'Loading…'; }
+    let done = 0, ok = 0;
+    for(const id of ids){
+      setStatus(settingsStatus, `Loading real history from Tornsy… ${done}/${ids.length}`, '');
+      const success = await fetchTornsyHistoryFor(id, stocksCache[id].acronym);
+      if(success) ok++;
+      done++;
+      await new Promise(r => setTimeout(r, 150)); // a small, polite gap between requests
+    }
+    tornsyLoading = false;
+    if(btn) btn.disabled = false;
+    if(promptBtn){ promptBtn.disabled = false; promptBtn.textContent = 'Load real history'; }
+    dismissTornsyPrompt();
+    try{ localStorage.setItem(STORE_TORNSY_HISTORY, JSON.stringify(tornsyHistory)); }catch(e){ console.error('Could not save Tornsy history', e); }
+    setStatus(settingsStatus, `Loaded real history for ${ok}/${ids.length} stocks from Tornsy.`, 'ok');
+    renderStockList();
+  }
+
+  // Merges in Tornsy's real historical data (if we have any for this stock) alongside our
+  // own local + shared points. No cap here — Tornsy's data is the older/deeper layer and
+  // shouldn't get pushed out by a recency-based cap meant for the live-polled layer.
+  function mergeWithTornsy(id, baseHist){
+    const t = asPointArray(tornsyHistory[id]);
+    if(!t.length) return baseHist;
+    const map = new Map();
+    baseHist.concat(t).forEach(([ts, p]) => map.set(ts, p));
+    return Array.from(map.entries()).sort((a, b) => a[0] - b[0]);
+  }
+
+  const GRAPH_RANGE_MS = {
+    '1h': 3600 * 1000,
+    '24h': 24 * 3600 * 1000,
+    '7d': 7 * 24 * 3600 * 1000,
+    '30d': 30 * 24 * 3600 * 1000,
+    'all': null,
+  };
+
+  function buildSparkline(id, watch){
+    let hist = cloudEnabled ? mergedHistoryFor(id) : asPointArray(priceHistory[id]);
+    hist = mergeWithTornsy(id, hist || []);
+    const rangeMs = GRAPH_RANGE_MS[graphRange];
+    if(rangeMs){
+      const cutoff = Date.now() - rangeMs;
+      const filtered = hist.filter(pt => pt[0] >= cutoff);
+      // If a tight range leaves too little to draw a meaningful line, fall back to the full
+      // history rather than showing an empty/near-empty graph.
+      hist = filtered.length >= 2 ? filtered : hist;
+    }
+    if(!hist || hist.length < 2) return null;
+    const svgW = 280, svgH = 32, pad = 2;
+    const prices = hist.map(pt => pt[1]);
+    const naturalMin = Math.min.apply(null, prices);
+    const naturalMax = Math.max.apply(null, prices);
+    const naturalSpan = (naturalMax - naturalMin) || Math.max(naturalMax * 0.02, 1); // treat a flat line as having a small nominal span, not zero
+
+    // Your own alert thresholds and avg buy price, drawn as dashed reference lines — but only
+    // when they're reasonably close to the actual price data. A threshold miles away (like old
+    // test data, or a target set long ago) would otherwise stretch the whole chart so far that
+    // real day-to-day price movement gets squashed into an invisible flat line. Anything too far
+    // off is instead just noted as off-chart rather than distorting the scale.
+    const MAX_STRETCH = 4; // a threshold can widen the visible range by at most this many natural-spans
+    const candidateThresholds = [];
+    if(watch){
+      if(watch.armedHigh && watch.high !== null && watch.high !== undefined && Number.isFinite(Number(watch.high))){
+        candidateThresholds.push({ value: Number(watch.high), label: 'Notify above', color: 'var(--up)' });
+      }
+      if(watch.armedLow && watch.low !== null && watch.low !== undefined && Number.isFinite(Number(watch.low))){
+        candidateThresholds.push({ value: Number(watch.low), label: 'Notify below', color: 'var(--down)' });
+      }
+      if(watch.avgBuyPrice && Number.isFinite(Number(watch.avgBuyPrice))){
+        candidateThresholds.push({ value: Number(watch.avgBuyPrice), label: 'Avg buy', color: 'var(--gold)' });
+      }
+    }
+    let min = naturalMin, max = naturalMax;
+    const thresholds = [];
+    candidateThresholds.forEach(t => {
+      const distance = t.value < naturalMin ? naturalMin - t.value : (t.value > naturalMax ? t.value - naturalMax : 0);
+      if(distance <= naturalSpan * MAX_STRETCH){
+        min = Math.min(min, t.value);
+        max = Math.max(max, t.value);
+        thresholds.push(t);
+      }else{
+        thresholds.push(Object.assign({}, t, { offChart: t.value > naturalMax ? 'above' : 'below' }));
+      }
+    });
+
+    const span = (max - min) || 1;
+    const stepX = (svgW - pad * 2) / (prices.length - 1);
+    const xAt = i => pad + i * stepX;
+    const yAtVal = v => svgH - pad - ((v - min) / span) * (svgH - pad * 2);
+    const yAt = i => yAtVal(prices[i]);
+    const points = prices.map((_, i) => `${xAt(i).toFixed(1)},${yAt(i).toFixed(1)}`).join(' ');
+    const up = prices[prices.length - 1] >= prices[0];
+    const color = up ? 'var(--up)' : 'var(--down)';
+
+    // Cap how many tappable points we render per chart (independent of how much data underlies
+    // it) so long histories don't turn into hundreds of hit targets on the page.
+    const MAX_MARKERS = 30;
+    const markerIdx = hist.length <= MAX_MARKERS
+      ? hist.map((_, i) => i)
+      : Array.from({ length: MAX_MARKERS }, (_, i) => Math.round(i * (hist.length - 1) / (MAX_MARKERS - 1)));
+    const basePrice = prices[0];
+    const markers = markerIdx.map(i => {
+      const p = prices[i];
+      const t = hist[i][0];
+      const pct = ((p - basePrice) / basePrice) * 100;
+      return `<circle class="spark-point" cx="${xAt(i).toFixed(1)}" cy="${yAt(i).toFixed(1)}" r="7" style="fill:${color}; opacity:0; pointer-events:all; cursor:pointer;" data-t="${t}" data-p="${p.toFixed(2)}" data-pct="${pct.toFixed(2)}"></circle>`;
+    }).join('');
+
+    const thresholdLines = thresholds.filter(t => !t.offChart).map(t => {
+      const y = yAtVal(t.value).toFixed(1);
+      return `<line x1="0" y1="${y}" x2="${svgW}" y2="${y}" style="stroke:${t.color}; stroke-width:1; stroke-dasharray:3,2; opacity:0.65;"/>`;
+    }).join('');
+
+    const svg = `<svg class="spark" viewBox="0 0 ${svgW} ${svgH}" preserveAspectRatio="none">
+        ${thresholdLines}
+        <polyline points="${points}" fill="none" style="stroke:${color}; stroke-width:1.6; stroke-linejoin:round; stroke-linecap:round;"/>
+        ${markers}
+      </svg>`;
+    return { svg, min, max, points: hist.length, thresholds };
+  }
+
+  let sparkTooltipEl = null;
+  function ensureSparkTooltip(){
+    if(sparkTooltipEl) return sparkTooltipEl;
+    sparkTooltipEl = document.createElement('div');
+    sparkTooltipEl.className = 'spark-tooltip';
+    document.body.appendChild(sparkTooltipEl);
+    return sparkTooltipEl;
+  }
+
+  function showSparkTooltip(clientX, clientY, t, p, pct){
+    const el = ensureSparkTooltip();
+    const d = new Date(t);
+    const stamp = `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const sign = pct >= 0 ? '+' : '';
+    const cls = pct >= 0 ? 'up' : 'down';
+    el.innerHTML = `<div class="spark-tooltip-time">${stamp}</div><div>$${Number(p).toFixed(2)} <span class="${cls}">(${sign}${Number(pct).toFixed(1)}% since graph start)</span></div>`;
+    el.style.display = 'block';
+    const pad = 12;
+    let left = clientX + pad;
+    let top = clientY + pad;
+    const rect = el.getBoundingClientRect();
+    if(left + rect.width > window.innerWidth - 6) left = clientX - rect.width - pad;
+    if(top + rect.height > window.innerHeight - 6) top = clientY - rect.height - pad;
+    el.style.left = Math.max(6, left) + 'px';
+    el.style.top = Math.max(6, top) + 'px';
+  }
+
+  function hideSparkTooltip(){
+    if(sparkTooltipEl) sparkTooltipEl.style.display = 'none';
+  }
+
+  document.addEventListener('click', (e) => {
+    const pt = e.target.closest('.spark-point');
+    if(pt){
+      e.stopPropagation();
+      showSparkTooltip(e.clientX, e.clientY, Number(pt.dataset.t), Number(pt.dataset.p), Number(pt.dataset.pct));
+    }else if(!e.target.closest('.spark-tooltip')){
+      hideSparkTooltip();
+    }
+  });
+  document.addEventListener('touchstart', (e) => {
+    const pt = e.target.closest('.spark-point');
+    if(pt){
+      const touch = e.touches[0];
+      showSparkTooltip(touch.clientX, touch.clientY, Number(pt.dataset.t), Number(pt.dataset.p), Number(pt.dataset.pct));
+    }
+  }, { passive: true });
+
+  function persistLastPrices(){
+    try{
+      const snapshot = {};
+      Object.entries(stocksCache).forEach(([id, s]) => { snapshot[id] = s.price; });
+      localStorage.setItem(STORE_LAST_PRICES, JSON.stringify(snapshot));
+    }catch(e){ console.error('Could not save last-visit prices', e); }
+  }
+
+  function appendAlertLog(title, body){
+    alertLog.unshift({ time: Date.now(), title, body });
+    if(alertLog.length > 50) alertLog.length = 50;
+    try{ localStorage.setItem(STORE_ALERT_LOG, JSON.stringify(alertLog)); }
+    catch(e){ console.error('Could not save alert history', e); }
+    renderAlertLog();
+  }
+
+  function renderAlertLog(){
+    if(!alertLog.length){
+      alertLogList.innerHTML = '<div class="empty">No alerts fired yet.</div>';
+      return;
+    }
+    alertLogList.innerHTML = alertLog.map(entry => {
+      const d = new Date(entry.time);
+      const stamp = `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+      return `<div class="log-row"><span class="log-time">${stamp}</span><span class="log-text"><b>${entry.title}</b> — ${entry.body}</span></div>`;
+    }).join('');
+  }
+
+  clearLogBtn.addEventListener('click', () => {
+    alertLog = [];
+    try{ localStorage.removeItem(STORE_ALERT_LOG); }catch(e){ /* non-fatal */ }
+    renderAlertLog();
+  });
+
+  $('loadTornsyBtn').addEventListener('click', loadRealHistoryFromTornsy);
+  $('tornsyPromptLoadBtn').addEventListener('click', loadRealHistoryFromTornsy);
+  $('tornsyPromptDismissBtn').addEventListener('click', dismissTornsyPrompt);
+
+  resetAllBtn.addEventListener('click', () => {
+    if(resetAllBtn.dataset.confirming === '1'){
+      [STORE_KEY, STORE_USERNAME, STORE_WATCHES, STORE_RANGES, STORE_BUDGET, STORE_WATCHED_ONLY, STORE_LAST_PRICES, STORE_ALERT_LOG, STORE_TORNSY_PROMPT_SEEN, STORE_TORNSY_HISTORY, STORE_HISTORY].forEach(k => {
+        try{ localStorage.removeItem(k); }catch(e){ /* non-fatal */ }
+      });
+      location.reload();
+      return;
+    }
+    resetAllBtn.dataset.confirming = '1';
+    resetAllBtn.textContent = 'Tap again to confirm — this can\'t be undone';
+    setStatus(settingsStatus, 'This will erase your key, watchlist, and history from this device.', 'err');
+    setTimeout(() => {
+      resetAllBtn.dataset.confirming = '';
+      resetAllBtn.textContent = 'Reset all app data';
+      setStatus(settingsStatus, '', '');
+    }, 5000);
+  });
+
+  function startCheckTimerTick(){
+    if(checkTickTimer) clearInterval(checkTickTimer);
+    checkTickTimer = setInterval(updateCheckTimerDisplay, 1000);
+    updateCheckTimerDisplay();
+  }
+
+  function updateCheckTimerDisplay(){
+    if(!apiKey || !lastCheckTime){
+      checkTimerStatus.textContent = '';
+      return;
+    }
+    const intervalSec = parseInt(pollIntervalSel.value, 10) || 120;
+    const secsSinceCheck = Math.floor((Date.now() - lastCheckTime) / 1000);
+    const secsToNext = intervalSec - secsSinceCheck;
+    const lastStr = secsSinceCheck < 60 ? `${secsSinceCheck}s ago` : `${Math.floor(secsSinceCheck/60)}m ago`;
+    if(secsToNext < -Math.max(30, intervalSec)){
+      checkTimerStatus.innerHTML = `<span style="color:var(--down);">⚠ No check in a while (last: ${lastStr}) — this tab may be backgrounded or throttled.</span>`;
+    }else if(secsToNext <= 0){
+      checkTimerStatus.textContent = `Last checked ${lastStr} · checking now…`;
+    }else{
+      checkTimerStatus.textContent = `Last checked ${lastStr} · next check in ${secsToNext}s`;
+    }
+  }
+
+  budgetInput.addEventListener('change', () => {
+    budget = budgetInput.value === '' ? null : parseFloat(budgetInput.value);
+    try{ localStorage.setItem(STORE_BUDGET, budget === null ? '' : String(budget)); }
+    catch(e){ console.error(e); }
+    renderStockList();
+  });
+
+  $('saveKeyBtn').addEventListener('click', async () => {
+    apiKey = keyInput.value.trim();
+    if(!apiKey){ setStatus(keyStatus, 'Enter a key first.', 'err'); return; }
+    try{ localStorage.setItem(STORE_KEY, apiKey); }
+    catch(e){ console.error(e); }
+    setStatus(keyStatus, 'Checking key…');
+    await refreshStocks(true);
+    fetchUserName();
+  });
+
+  $('logoutKeyBtn').addEventListener('click', () => {
+    if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+    if(checkTickTimer){ clearInterval(checkTickTimer); checkTickTimer = null; }
+    apiKey = '';
+    keyInput.value = '';
+    userName = null;
+    try{ localStorage.removeItem(STORE_KEY); }catch(e){ /* non-fatal */ }
+    try{ localStorage.removeItem(STORE_USERNAME); }catch(e){ /* non-fatal */ }
+    renderWelcomeMessage();
+    stocksCache = {};
+    tickDirection = {};
+    lastCheckTime = null;
+    stockList.innerHTML = '<div class="empty">Connect your API key above to load the stock list.</div>';
+    portfolioSummary.textContent = '';
+    signalsBox.innerHTML = '';
+    incomeSummaryBox.innerHTML = '';
+    buyNextBox.innerHTML = '';
+    bankBoxBody.innerHTML = '';
+    checkTimerStatus.textContent = '';
+    pollStatus.textContent = '';
+    document.title = DEFAULT_TITLE;
+    setStatus(keyStatus, 'Logged out — your watchlist, thresholds, and history are still saved on this device for next time.', 'ok');
+  });
+
+  customKeyBtn.addEventListener('click', () => {
+    const url = 'https://www.torn.com/preferences.php#tab=api?step=addNewKey&title=' + encodeURIComponent('Stock Alerts') + '&torn=stocks,bank&user=stocks,basic';
+    window.open(url, '_blank');
+  });
+
+  function sendNotification(title, body){
+    if(!('Notification' in window) || Notification.permission !== 'granted') return;
+    // Chrome on Android (and some others) forbid `new Notification()` once a service worker
+    // controls the page — it throws "Illegal constructor" and must go through the SW instead.
+    if(swRegistration && swRegistration.showNotification){
+      swRegistration.showNotification(title, { body });
+    }else{
+      try{
+        new Notification(title, { body });
+      }catch(e){
+        // Some browsers throw here even without a registration reference we caught in time.
+        if(navigator.serviceWorker && navigator.serviceWorker.ready){
+          navigator.serviceWorker.ready.then(reg => reg.showNotification(title, { body })).catch(() => {});
+        }
+      }
+    }
+  }
+
+  notifBtn.addEventListener('click', async () => {
+    if(!('Notification' in window)){
+      setStatus(pollStatus, 'This browser does not support notifications.', 'err');
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    if(perm === 'granted'){
+      notifBtn.textContent = 'Notifications on';
+      notifBtn.disabled = true;
+      sendNotification('Torn Stock Alerts', "You'll be notified here when a stock crosses your price.");
+    }else{
+      setStatus(pollStatus, 'Notifications were blocked — enable them in your browser settings to get alerts.', 'err');
+    }
+  });
+
+  function updateRanges(){
+    extremeEvents = {};
+    Object.entries(stocksCache).forEach(([id, s]) => {
+      const p = Number(s.price);
+      if(!ranges[id]){ ranges[id] = { high: p, low: p }; }
+      else{
+        if(p > ranges[id].high){ ranges[id].high = p; extremeEvents[id] = 'high'; }
+        if(p < ranges[id].low){ ranges[id].low = p; extremeEvents[id] = 'low'; }
+      }
+    });
+  }
+
+  let bankRates = null; // { "1w":.., "2w":.., "1m":.., "2m":.., "3m":.. } — % return for that term, straight from Torn
+
+  function renderWelcomeMessage(){
+    const el = $('welcomeMsg');
+    if(!el) return;
+    if(userName){
+      el.textContent = `Welcome back, ${userName}.`;
+      el.style.display = 'block';
+    }else{
+      el.style.display = 'none';
+    }
+  }
+
+  async function fetchUserName(){
+    if(!apiKey) return;
+    try{
+      const res = await fetch(`https://api.torn.com/user/?selections=basic&key=${encodeURIComponent(apiKey)}`);
+      const data = await res.json();
+      if(data.error || !data.name) return; // key may not have "basic" access — fail quietly, nothing else breaks
+      userName = data.name;
+      try{ localStorage.setItem(STORE_USERNAME, userName); }catch(e){ /* non-fatal */ }
+      renderWelcomeMessage();
+    }catch(e){
+      console.error('Could not fetch player name for the welcome message', e);
+    }
+  }
+
+  async function refreshStocks(announce){
+    if(!apiKey) return;
+    let data;
+    try{
+      const res = await fetch(`https://api.torn.com/torn/?selections=stocks,bank&key=${encodeURIComponent(apiKey)}`);
+      data = await res.json();
+    }catch(e){
+      console.error('Torn API request failed', e);
+      setStatus(keyStatus, `Could not reach the Torn API (${(e && e.message) ? e.message : e}). Check your connection.`, 'err');
+      return;
+    }
+    if(data.error){
+      setStatus(keyStatus, `Torn API error: ${data.error.error}`, 'err');
+      return;
+    }
+    try{
+      stocksCache = {};
+      tickDirection = {};
+      if(!data.stocks || Object.keys(data.stocks).length === 0){
+        if(announce) setStatus(keyStatus, 'Torn API returned no stock data — nothing loaded.', 'err');
+        updateRanges();
+        lastCheckTime = Date.now();
+        updateCheckTimerDisplay();
+        updateTape();
+        renderStockList();
+        return;
+      }
+      Object.values(data.stocks).forEach(s => {
+        if(prevVisitPrices[s.stock_id] !== undefined){
+          const oldP = Number(prevVisitPrices[s.stock_id]);
+          const newP = Number(s.current_price);
+          if(newP > oldP) tickDirection[s.stock_id] = 'up';
+          else if(newP < oldP) tickDirection[s.stock_id] = 'down';
+        }
+        stocksCache[s.stock_id] = { name: s.name, acronym: s.acronym, price: s.current_price, benefit: s.benefit || null, totalShares: s.total_shares };
+      });
+      if(announce) setStatus(keyStatus, `Key works — ${Object.keys(stocksCache).length} stocks loaded.`, 'ok');
+      updateRanges();
+      persistRanges();
+      recordHistory();
+      persistHistory();
+      persistLastPrices();
+      lastCheckTime = Date.now();
+      updateCheckTimerDisplay();
+      updateTape();
+      renderStockList();
+      startPolling();
+    }catch(e){
+      // The key worked and data arrived fine — this is a rendering bug, not a connection problem,
+      // so don't tell the user their key/connection is broken. Log it in full for debugging.
+      console.error('Failed to render stock list after a successful Torn API response', e);
+      if(announce) setStatus(keyStatus, `Key works, but the display hit a snag (${(e && e.message) ? e.message : e}). Try refreshing the page.`, 'err');
+    }
+  }
+
+  function updateTape(){
+    const items = Object.entries(stocksCache);
+    if(!items.length) return;
+    const half = items.map(([id, s]) => {
+      const arrow = tickDirection[id] === 'up' ? ' <span class="tick-arrow up">↑</span>' : tickDirection[id] === 'down' ? ' <span class="tick-arrow down">↓</span>' : '';
+      return `<span>${s.acronym} $${Number(s.price).toFixed(2)}${arrow}</span>`;
+    }).join('');
+    tapeTrack.innerHTML = half + half; // duplicate for seamless loop
+  }
+
+  // Torn's benefit description text sometimes includes a cash figure (e.g. "$992,853 -/day"),
+  // but the exact format isn't guaranteed, so this is offered only as a starting guess —
+  // the user can always override it with what they actually see in-game.
+  function guessPayoutFromDescription(text){
+    if(!text) return null;
+    const m = String(text).match(/\$([\d,]+(?:\.\d+)?)/);
+    if(!m) return null;
+    const n = parseFloat(m[1].replace(/,/g, ''));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+
+  function distanceToAlert(s, w){
+    if(!w) return Infinity;
+    const price = Number(s.price);
+    const dists = [];
+    if(w.high !== null && w.high !== undefined && w.armedHigh) dists.push(Math.abs(Number(w.high) - price));
+    if(w.low !== null && w.low !== undefined && w.armedLow) dists.push(Math.abs(Number(w.low) - price));
+    if(w.pctDropPct && w.armedPctDrop){
+      const target = w.pctDropBase * (1 - w.pctDropPct / 100);
+      dists.push(Math.abs(target - price));
+    }
+    if(w.pctRisePct && w.armedPctRise){
+      const target = w.pctRiseBase * (1 + w.pctRisePct / 100);
+      dists.push(Math.abs(target - price));
+    }
+    return dists.length ? Math.min(...dists) / price : Infinity; // as a fraction of price, so stocks at different price scales compare fairly
+  }
+
+  const DEFAULT_TITLE = 'Torn Stock Alerts';
+  function updateTabTitle(){
+    const watchedIds = Object.keys(watches).filter(id => stocksCache[id]);
+    if(!watchedIds.length){
+      document.title = DEFAULT_TITLE;
+      return;
+    }
+    const list = watchedIds.map(id => Object.assign({ id }, stocksCache[id]));
+    const top = sortStocks(list)[0];
+    document.title = top ? `${top.acronym} $${Number(top.price).toFixed(2)} — ${DEFAULT_TITLE}` : DEFAULT_TITLE;
+  }
+
+  function sortStocks(list){
+    if(sortMode === 'pctChange'){
+      return list.slice().sort((a, b) => {
+        const pctFor = s => {
+          const prev = prevVisitPrices[s.id];
+          if(prev === undefined || !Number(prev)) return 0;
+          return Math.abs((Number(s.price) - Number(prev)) / Number(prev));
+        };
+        return pctFor(b) - pctFor(a);
+      });
+    }
+    if(sortMode === 'distance'){
+      return list.slice().sort((a, b) => distanceToAlert(a, watches[a.id]) - distanceToAlert(b, watches[b.id]));
+    }
+    return list.slice().sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  function renderStockList(){
+    const term = stockFilter.value.trim().toLowerCase();
+    const watchedOnly = watchedOnlyToggle.checked;
+    const all = sortStocks(
+      Object.entries(stocksCache)
+        .map(([id, s]) => ({ id, ...s }))
+        .filter(s => !term || s.name.toLowerCase().includes(term) || s.acronym.toLowerCase().includes(term))
+        .filter(s => !watchedOnly || !!watches[s.id])
+    );
+
+    if(!all.length){
+      const msg = watchedOnly && Object.keys(stocksCache).length
+        ? "You haven't checked any stocks yet — turn off \"Watched only\" to browse and pick some."
+        : (Object.keys(stocksCache).length ? 'No stocks match that filter.' : 'Connect your API key above to load the stock list.');
+      stockList.innerHTML = `<div class="empty">${msg}</div>`;
+      return;
+    }
+
+    const signalsSummary = [];
+
+    stockList.innerHTML = all.map(s => {
+      const w = watches[s.id];
+      const checked = !!w;
+      const low = w && w.low !== null && w.low !== undefined ? w.low : '';
+      const high = w && w.high !== null && w.high !== undefined ? w.high : '';
+      const owned = w && w.owned ? w.owned : '';
+
+      let avgBuyWarning = '';
+      if(w && w.avgBuyPrice && Number(w.avgBuyPrice) > 0 && Number(s.price) > 0){
+        const ratio = Number(w.avgBuyPrice) / Number(s.price);
+        if(ratio > 20 || ratio < 0.05){
+          const times = ratio > 1 ? `${Math.round(ratio)}×` : `1/${Math.round(1 / ratio)}×`;
+          avgBuyWarning = `<div class="field-warning">⚠ That's ${times} the current price — looks like it might be a total amount, not a per-share price.</div>`;
+        }
+      }
+      const tags = [];
+      if(w){
+        if(w.high !== null) tags.push(`<span class="armed-tag ${w.armedHigh ? '' : 'hit-high'}">${w.armedHigh ? 'watching above ' + w.high : 'alerted · above ' + w.high}</span>`);
+        if(w.low !== null) tags.push(`<span class="armed-tag ${w.armedLow ? '' : 'hit-low'}">${w.armedLow ? 'watching below ' + w.low : 'alerted · below ' + w.low}</span>`);
+        if(w.pctDropPct){
+          const target = (w.pctDropBase * (1 - w.pctDropPct / 100)).toFixed(2);
+          tags.push(`<span class="armed-tag ${w.armedPctDrop ? '' : 'hit-low'}">${w.armedPctDrop ? `watching -${w.pctDropPct}% (below $${target})` : `alerted · dropped ${w.pctDropPct}%`}</span>`);
+        }
+        if(w.pctRisePct){
+          const target = (w.pctRiseBase * (1 + w.pctRisePct / 100)).toFixed(2);
+          tags.push(`<span class="armed-tag ${w.armedPctRise ? '' : 'hit-high'}">${w.armedPctRise ? `watching +${w.pctRisePct}% (above $${target})` : `alerted · rose ${w.pctRisePct}%`}</span>`);
+        }
+      }
+
+      const spark = buildSparkline(s.id, w);
+      const sparkBlock = spark
+        ? `<div class="spark-wrap">${spark.svg}<div class="spark-meta"><span>$${spark.min.toFixed(2)}</span><span>${spark.points} checks tracked</span><span>$${spark.max.toFixed(2)}</span></div>${spark.thresholds.length ? `<div class="spark-legend">${spark.thresholds.map(t => t.offChart ? `<span style="color:${t.color}; opacity:0.7;">${t.offChart === 'above' ? '↑' : '↓'} ${t.label} $${t.value.toFixed(2)} (off-chart, too far from recent prices)</span>` : `<span style="color:${t.color};">▬ ${t.label} $${t.value.toFixed(2)}</span>`).join(' ')}</div>` : ''}</div>`
+        : `<div class="spark-wrap spark-empty">Graph builds up as this app checks prices — check again soon.</div>`;
+
+      const r = ranges[s.id];
+      let rangeLine = '';
+      let suggestion = '';
+      let lastVisitLine = '';
+      const isNewLow = extremeEvents[s.id] === 'low';
+      const isNewHigh = extremeEvents[s.id] === 'high';
+
+      if(prevVisitPrices[s.id] !== undefined && prevVisitPrices[s.id] !== s.price){
+        const prevP = Number(prevVisitPrices[s.id]);
+        const curP = Number(s.price);
+        const deltaPct = ((curP - prevP) / prevP) * 100;
+        const cls = deltaPct >= 0 ? 'up' : 'down';
+        lastVisitLine = `<div class="range-line">Since last visit: <span style="color:var(--${cls});">${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}%</span> ($${prevP.toFixed(2)} → $${curP.toFixed(2)})</div>`;
+      }
+
+      if(r){
+        const price = Number(s.price);
+        const span = r.high - r.low;
+        const pct = span > 0 ? (price - r.low) / span : 0.5;
+        let sig = { cls:'mid', label:'mid-range' };
+        if(pct <= 0.33) sig = { cls:'buy', label:'near session low' };
+        else if(pct >= 0.66) sig = { cls:'high', label:'near session high' };
+
+        const extremeBadge = isNewLow ? ` <span class="signal-tag buy">NEW LOW</span>` : (isNewHigh ? ` <span class="signal-tag high">NEW HIGH</span>` : '');
+        rangeLine = `<div class="range-line">This session: $${r.low.toFixed(2)} – $${r.high.toFixed(2)} &nbsp;·&nbsp; <span class="signal-tag ${sig.cls}">${sig.label}</span> &nbsp;·&nbsp; <span title="Position within prices checked since you opened this tab, not a forecast">${Math.round(pct*100)}% of this session</span>${extremeBadge}</div>`;
+
+        if(checked && isNewLow){
+          signalsSummary.push({ type:'buy', name:s.name, acronym:s.acronym, text:`Just hit a new session low ($${price.toFixed(2)})` });
+        }else if(checked && isNewHigh && w.owned > 0){
+          signalsSummary.push({ type:'sell', name:s.name, acronym:s.acronym, text:`Just hit a new session high ($${price.toFixed(2)}), you hold ${fmtNum(w.owned)} shares` });
+        }
+
+        if(checked && sig.cls === 'buy' && budget && budget > 0){
+          const shares = Math.floor(budget / price);
+          if(shares > 0){
+            suggestion = `<div class="suggestion-line">Price is low in its recent range. At your $${fmtNum(budget)} budget, that's <span class="amt">${fmtNum(shares)} shares</span> (~$${fmtMoney((shares*price))}).</div>`;
+            signalsSummary.push({ type:'buy', name:s.name, acronym:s.acronym, text:`${fmtNum(shares)} shares (~$${fmtMoney((shares*price))})` });
+          }
+        }else if(checked && sig.cls === 'high' && w.owned > 0){
+          const proceeds = netSellProceeds(w.owned, price);
+          suggestion = `<div class="suggestion-line">You hold ${fmtNum(w.owned)} shares and price is high in its recent range — one point to consider taking some profit, if that fits your plan. Selling all now would net you ~$${fmtMoney(proceeds)} after Torn's 0.1% sell fee.</div>`;
+          signalsSummary.push({ type:'sell', name:s.name, acronym:s.acronym, text:`${fmtNum(w.owned)} shares, ~$${fmtMoney(proceeds)} net of the 0.1% sell fee` });
+        }else if(checked && sig.cls === 'high'){
+          suggestion = `<div class="suggestion-line">Price is high in its recent range — this isn't a signal to buy right now.</div>`;
+        }
+      }
+
+      let benefitLine = '';
+      if(s.benefit && s.benefit.requirement){
+        const bbSize = s.benefit.requirement; // shares needed per Benefit Block
+        const have = w && w.owned ? w.owned : 0;
+        const freqDays = s.benefit.frequency || null;
+        const price = Number(s.price);
+        const costOf = (shares) => `~$${fmtMoney((shares * price))}`;
+
+        if(s.benefit.type === 'active'){
+          const ownedBBs = Math.floor(have / bbSize);
+          const increment = ownedBBs > 0 ? Math.floor(Math.log2(ownedBBs + 1)) : 0;
+          const freqText = freqDays ? ` every ${freqDays} day${freqDays > 1 ? 's' : ''}` : '';
+          if(increment > 0){
+            const nextNeededBBs = Math.pow(2, increment + 1) - 1;
+            const nextNeededShares = (nextNeededBBs * bbSize) - have;
+            benefitLine = `<div class="benefit-line"><span class="met">✓ ${increment} increment${increment > 1 ? 's' : ''} active:</span> ${s.benefit.description}${freqText} — <span class="need">${fmtNum(nextNeededShares)} more shares (${costOf(nextNeededShares)}) for the next increment</span></div>`;
+          }else{
+            const gap = bbSize - have;
+            benefitLine = `<div class="benefit-line">First increment at ${fmtNum(bbSize)} shares: ${s.benefit.description}${freqText} — <span class="need">${fmtNum(gap)} more shares (${costOf(gap)}) needed</span></div>`;
+          }
+        }else{
+          // passive: single unlock, activates after holding bbSize shares for 7 days
+          if(have >= bbSize){
+            benefitLine = `<div class="benefit-line"><span class="met">✓ Unlocked</span> (after 7 days holding): ${s.benefit.description}</div>`;
+          }else{
+            const gap = bbSize - have;
+            benefitLine = `<div class="benefit-line">Unlocks at ${fmtNum(bbSize)} shares, held 7 days: ${s.benefit.description} — <span class="need">${fmtNum(gap)} more shares (${costOf(gap)}) needed</span></div>`;
+          }
+        }
+      }
+
+      let dividendLine = '';
+      if(w && s.benefit && s.benefit.type === 'active' && s.benefit.frequency){
+        const freqDays = s.benefit.frequency;
+        if(w.lastCollected){
+          const nextTime = new Date(w.lastCollected).getTime() + freqDays * 86400000;
+          const daysLeft = Math.ceil((nextTime - Date.now()) / 86400000);
+          if(daysLeft <= 0){
+            dividendLine = `<div class="benefit-line"><span class="met">💰 Payout ready</span> — collect it in-game within 24h or the next one gets pushed back.</div>`;
+          }else{
+            dividendLine = `<div class="benefit-line">Next payout in ${daysLeft} day${daysLeft > 1 ? 's' : ''} (around ${new Date(nextTime).toLocaleDateString()}).</div>`;
+          }
+        }
+      }
+
+      let positionLine = '';
+      if(w && w.owned > 0){
+        const price = Number(s.price);
+        const nowTotal = w.owned * price;
+        if(w.avgBuyPrice){
+          const boughtTotal = w.owned * w.avgBuyPrice;
+          const pl = nowTotal - boughtTotal;
+          const plPct = (pl / boughtTotal) * 100;
+          const plCls = pl >= 0 ? 'up' : 'down';
+          const perShareChange = price - w.avgBuyPrice;
+          const perShareChangePct = (perShareChange / w.avgBuyPrice) * 100;
+          const changeCls = perShareChange >= 0 ? 'up' : 'down';
+          const buyDateCell = w.buyDate ? new Date(w.buyDate + 'T00:00:00').toLocaleDateString() : '—';
+          positionLine = `<div class="position-table-wrap"><table class="position-table">
+            <thead><tr><th>Buy date</th><th>Shares</th><th>Value</th><th>Bought</th><th>Current</th><th>Change</th><th>Profit</th></tr></thead>
+            <tbody><tr>
+              <td>${buyDateCell}</td>
+              <td>${fmtNum(w.owned)}</td>
+              <td>$${fmtMoney(nowTotal)}</td>
+              <td>$${w.avgBuyPrice.toFixed(2)}</td>
+              <td>$${price.toFixed(2)}</td>
+              <td class="${changeCls}">${perShareChange >= 0 ? '+' : ''}$${perShareChange.toFixed(2)} (${perShareChangePct >= 0 ? '+' : ''}${perShareChangePct.toFixed(2)}%)</td>
+              <td class="${plCls}">${pl >= 0 ? '+' : ''}$${fmtMoney(pl)} (${plPct >= 0 ? '+' : ''}${plPct.toFixed(1)}%)</td>
+            </tr></tbody>
+          </table></div>`;
+        }else{
+          positionLine = `<div class="position-line">
+            <span class="position-now">You hold ${fmtNum(w.owned)} shares, worth $${fmtMoney(nowTotal)} now — add "Your avg buy price" below to see profit/loss.</span>
+          </div>`;
+        }
+      }
+
+      const change24h = pctChange24h(s.id, Number(s.price));
+      const change24hHtml = change24h === null
+        ? `<span class="change-24h muted" title="Not enough tracked history yet for a 24h comparison">24h: —</span>`
+        : `<span class="change-24h ${change24h >= 0 ? 'up' : 'down'}">24h: ${change24h >= 0 ? '+' : ''}${change24h.toFixed(1)}%</span>`;
+
+      return `
+        <div class="stock-card ${checked ? 'checked' : ''}" data-id="${s.id}">
+          <div class="stock-top">
+            <input type="checkbox" class="watch-toggle" data-id="${s.id}" ${checked ? 'checked' : ''}>
+            <div class="stock-id-block">
+              <span class="name">${s.name}</span><span class="acr">${s.acronym}</span> ${change24hHtml}
+            </div>
+            <div class="price">$${Number(s.price).toFixed(2)}${tickDirection[s.id] === 'up' ? ' <span class="tick-arrow up">↑</span>' : tickDirection[s.id] === 'down' ? ' <span class="tick-arrow down">↓</span>' : ''}</div>
+          </div>
+          ${sparkBlock}
+          ${rangeLine}
+          ${lastVisitLine}
+          ${positionLine}
+          ${benefitLine}
+          ${dividendLine}
+          <details class="card-details">
+            <summary>Alerts &amp; position</summary>
+            <div class="thresh-panel">
+            <div class="field">
+              <label>Notify below</label>
+              <input type="number" step="0.01" class="low-input" data-id="${s.id}" value="${low}" placeholder="e.g. 720.00">
+            </div>
+            <div class="field">
+              <label>Notify above</label>
+              <input type="number" step="0.01" class="high-input" data-id="${s.id}" value="${high}" placeholder="e.g. 810.00">
+            </div>
+            <div class="field">
+              <label>Or if it drops %</label>
+              <input type="number" step="0.1" class="pct-drop-input" data-id="${s.id}" value="${w && w.pctDropPct ? w.pctDropPct : ''}" placeholder="e.g. 5">
+            </div>
+            <div class="field">
+              <label>Or if it rises %</label>
+              <input type="number" step="0.1" class="pct-rise-input" data-id="${s.id}" value="${w && w.pctRisePct ? w.pctRisePct : ''}" placeholder="e.g. 5">
+            </div>
+            <div class="field">
+              <label>You own</label>
+              <div class="owned-field-wrap">
+                <input type="number" step="1" class="owned-input" data-id="${s.id}" value="${owned}" placeholder="shares">
+                ${w && (w.owned || w.avgBuyPrice || w.buyDate) ? `<button type="button" class="clear-owned-btn" data-id="${s.id}" title="Sold out — clear owned shares, avg buy price &amp; buy date" aria-label="Clear owned shares for ${s.acronym}">${icon('trash')}</button>` : ''}
+              </div>
+            </div>
+            <div class="field">
+              <label>Buy date <span style="font-weight:400; color:var(--bone-dim);">(optional)</span></label>
+              <input type="date" class="buydate-input" data-id="${s.id}" value="${w && w.buyDate ? w.buyDate : ''}">
+            </div>
+            <div class="field">
+              <label>Your avg buy price</label>
+              <input type="number" step="0.01" class="avgbuy-input" data-id="${s.id}" value="${w && w.avgBuyPrice ? w.avgBuyPrice : ''}" placeholder="e.g. 740.00">
+              ${avgBuyWarning}
+            </div>
+            ${s.benefit && s.benefit.type === 'active' ? `
+            <div class="field">
+              <label>Last collected</label>
+              <input type="date" class="lastcollected-input" data-id="${s.id}" value="${w && w.lastCollected ? w.lastCollected : ''}">
+            </div>
+            <div class="field">
+              <label>Payout per increment ($)
+                <details class="help">
+                  <summary>?</summary>
+                  <div class="help-body">How much cash one increment of this benefit pays out, per payout. We try to guess this from Torn's own description text, but it's not guaranteed — check in-game and correct it if needed. This feeds the income summary and "what to buy next" ranking above the stock list.</div>
+                </details>
+              </label>
+              <input type="number" step="1" class="payout-input" data-id="${s.id}" value="${w && w.payoutAmount ? w.payoutAmount : ''}" placeholder="${guessPayoutFromDescription(s.benefit.description) || 'e.g. 992853'}">
+            </div>` : ''}
+            ${w && w.owned ? `<div class="field" style="display:flex; align-items:flex-end; gap:6px; flex-wrap:wrap;">
+              <span class="armed-tag" style="border-color:var(--gold-dim); color:var(--gold-dim);">worth $${fmtMoney(w.owned * Number(s.price))}</span>
+              <span class="armed-tag" title="Torn takes a 0.1% cut on stock sales">sell now: ~$${fmtMoney(netSellProceeds(w.owned, Number(s.price)))} (after 0.1% fee)</span>
+              ${w.avgBuyPrice ? (() => {
+                const pl = (Number(s.price) - w.avgBuyPrice) * w.owned;
+                const plPct = ((Number(s.price) - w.avgBuyPrice) / w.avgBuyPrice) * 100;
+                const cls = pl >= 0 ? 'up' : 'down';
+                return `<span class="armed-tag" style="border-color:var(--${cls}); color:var(--${cls});">${pl >= 0 ? '+' : ''}$${fmtMoney(pl)} (${plPct >= 0 ? '+' : ''}${plPct.toFixed(1)}%)</span>`;
+              })() : ''}
+            </div>` : ''}
+            ${tags.length ? `<div class="field" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">${tags.join('')}</div>` : ''}
+            ${suggestion}
+          </div>
+          </details>
+        </div>`;
+    }).join('');
+
+    stockList.querySelectorAll('.watch-toggle').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const id = cb.dataset.id;
+        if(cb.checked){
+          const info = stocksCache[id];
+          watches[id] = { name: info.name, acronym: info.acronym, low: null, high: null, owned: 0, armedLow: true, armedHigh: true };
+        }else{
+          delete watches[id];
+        }
+        persistWatches();
+        renderStockList();
+      });
+    });
+
+    stockList.querySelectorAll('.low-input, .high-input, .owned-input, .pct-drop-input, .pct-rise-input, .avgbuy-input, .lastcollected-input, .payout-input, .buydate-input').forEach(inp => {
+      inp.addEventListener('change', () => {
+        const id = inp.dataset.id;
+        const w = watches[id];
+        if(!w) return;
+        const curPrice = stocksCache[id] ? Number(stocksCache[id].price) : null;
+        if(inp.classList.contains('low-input')){
+          w.low = inp.value === '' ? null : parseFloat(inp.value); w.armedLow = true;
+        }else if(inp.classList.contains('high-input')){
+          w.high = inp.value === '' ? null : parseFloat(inp.value); w.armedHigh = true;
+        }else if(inp.classList.contains('pct-drop-input')){
+          w.pctDropPct = inp.value === '' ? null : parseFloat(inp.value);
+          w.pctDropBase = curPrice; w.armedPctDrop = true;
+        }else if(inp.classList.contains('pct-rise-input')){
+          w.pctRisePct = inp.value === '' ? null : parseFloat(inp.value);
+          w.pctRiseBase = curPrice; w.armedPctRise = true;
+        }else if(inp.classList.contains('avgbuy-input')){
+          w.avgBuyPrice = inp.value === '' ? null : parseFloat(inp.value);
+        }else if(inp.classList.contains('lastcollected-input')){
+          w.lastCollected = inp.value === '' ? null : inp.value;
+          w.dividendNotified = false;
+        }else if(inp.classList.contains('payout-input')){
+          w.payoutAmount = inp.value === '' ? null : parseFloat(inp.value);
+        }else if(inp.classList.contains('buydate-input')){
+          w.buyDate = inp.value === '' ? null : inp.value;
+        }else{
+          w.owned = inp.value === '' ? 0 : parseFloat(inp.value);
+        }
+        persistWatches();
+        renderStockList();
+      });
+    });
+
+    stockList.querySelectorAll('.clear-owned-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const w = watches[id];
+        if(!w) return;
+        w.owned = 0;
+        w.avgBuyPrice = null;
+        w.buyDate = null;
+        persistWatches();
+        renderStockList();
+      });
+    });
+
+    renderPortfolioSummary();
+    renderSignalsSummary(signalsSummary);
+    renderIncomeSummary();
+    renderBuyNextRanking();
+    renderBankBox();
+    maybeShowTornsyPrompt();
+    updateTabTitle();
+  }
+
+  function renderPortfolioSummary(){
+    const held = Object.entries(watches).filter(([id, w]) => w.owned > 0);
+    if(!held.length){
+      portfolioSummary.textContent = '';
+      return;
+    }
+    const total = held.reduce((sum, [id, w]) => {
+      const price = stocksCache[id] ? Number(stocksCache[id].price) : 0;
+      return sum + (w.owned * price);
+    }, 0);
+    const withCostBasis = held.filter(([id, w]) => w.avgBuyPrice);
+    let plText = '';
+    if(withCostBasis.length){
+      const totalPL = withCostBasis.reduce((sum, [id, w]) => {
+        const price = stocksCache[id] ? Number(stocksCache[id].price) : 0;
+        return sum + ((price - w.avgBuyPrice) * w.owned);
+      }, 0);
+      const sign = totalPL >= 0 ? '+' : '';
+      plText = ` · ${sign}$${fmtMoney(totalPL)} unrealized ${totalPL >= 0 ? 'profit' : 'loss'} on ${withCostBasis.length} priced stock${withCostBasis.length > 1 ? 's' : ''}`;
+    }
+    portfolioSummary.textContent = `Portfolio: ${held.length} stock${held.length > 1 ? 's' : ''} held, worth $${fmtMoney(total)} at current prices${plText}.`;
+  }
+
+  function renderSignalsSummary(signals){
+    if(!Object.keys(watches).length){
+      signalsBox.innerHTML = '';
+      return;
+    }
+    if(!signals.length){
+      signalsBox.innerHTML = `<div class="empty">No buy or sell signals right now — none of your watched stocks are near their session low or high yet. This fills in as the app tracks prices over time.</div>`;
+      return;
+    }
+    signalsBox.innerHTML = signals.map(sig => `
+      <div class="signal-row ${sig.type}">
+        <span class="signal-tag ${sig.type === 'buy' ? 'buy' : 'high'}">${sig.type === 'buy' ? 'Buy signal' : 'Consider selling'}</span>
+        <span class="signal-name">${sig.name} <span class="acr">${sig.acronym}</span></span>
+        <span class="signal-text">${sig.text}</span>
+      </div>`).join('');
+  }
+
+  function icon(name){
+    const icons = {
+      bolt: '<path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/>',
+      calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+      calendarRange: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>',
+      trendingUp: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+      briefcase: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16M2 13h20"/>',
+      cart: '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>',
+      bank: '<path d="M3 21h18M4 10h16M12 2 3 8h18l-9-6ZM6 10v11M10 10v11M14 10v11M18 10v11"/>',
+      gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82A1.65 1.65 0 0 0 3 13.09H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 3.6a1.65 1.65 0 0 0 1-1.51V2a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 8a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+      key: '<circle cx="8" cy="15" r="4"/><path d="M10.5 12.5 20 3M20 3h-4M20 3v4M15 8l2 2"/>',
+      userPlus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>',
+      logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+      docs: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/>',
+      trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
+      heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/>',
+    };
+    const path = icons[name] || '';
+    return `<svg class="micro-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+  }
+
+  function applyStaticIcons(){
+    document.querySelectorAll('.icon-slot[data-icon]').forEach(el => {
+      el.innerHTML = icon(el.dataset.icon);
+    });
+  }
+  applyStaticIcons();
+
+  function closeAllMenus(){
+    document.querySelectorAll('.dropdown-panel').forEach(p => { p.hidden = true; });
+    document.querySelectorAll('.icon-only-btn').forEach(b => b.setAttribute('aria-expanded', 'false'));
+  }
+  function setupMenu(btnId, panelId){
+    const btn = $(btnId);
+    const panel = $(panelId);
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const wasOpen = !panel.hidden;
+      closeAllMenus();
+      if(!wasOpen){
+        panel.hidden = false;
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+    panel.addEventListener('click', (e) => e.stopPropagation());
+  }
+  setupMenu('keyMenuBtn', 'keyPanel');
+  setupMenu('settingsMenuBtn', 'settingsPanel');
+  document.addEventListener('click', closeAllMenus);
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeAllMenus(); });
+
+  function activeBenefitInfo(s, w){
+    if(!s.benefit || s.benefit.type !== 'active' || !s.benefit.requirement) return null;
+    const bbSize = s.benefit.requirement;
+    const have = w && w.owned ? w.owned : 0;
+    const ownedBBs = Math.floor(have / bbSize);
+    const increment = ownedBBs > 0 ? Math.floor(Math.log2(ownedBBs + 1)) : 0;
+    const freqDays = s.benefit.frequency || null;
+    const payoutPerIncrement = (w && w.payoutAmount) ? Number(w.payoutAmount) : guessPayoutFromDescription(s.benefit.description);
+    return { bbSize, have, increment, freqDays, payoutPerIncrement, guessed: !(w && w.payoutAmount) };
+  }
+
+  function dailyIncomeFor(s, w){
+    const info = activeBenefitInfo(s, w);
+    if(!info || !info.increment || !info.freqDays || !info.payoutPerIncrement) return 0;
+    return (info.payoutPerIncrement * info.increment) / info.freqDays;
+  }
+
+  function renderIncomeSummary(){
+    const held = Object.entries(watches).filter(([id, w]) => w.owned > 0);
+    let dailyTotal = 0, contributing = 0, portfolioValue = 0;
+    held.forEach(([id, w]) => {
+      const s = stocksCache[id];
+      if(!s) return;
+      portfolioValue += w.owned * Number(s.price);
+      const daily = dailyIncomeFor(s, w);
+      if(daily > 0){ dailyTotal += daily; contributing++; }
+    });
+    if(!held.length){
+      incomeSummaryBox.innerHTML = '';
+      return;
+    }
+    const stats = [
+      ['bolt', 'Daily income', dailyTotal, `${contributing} from stocks`],
+      ['calendar', 'Weekly', dailyTotal * 7, null],
+      ['calendarRange', 'Monthly', dailyTotal * 30, null],
+      ['trendingUp', 'Annual', dailyTotal * 365, null],
+    ];
+    incomeSummaryBox.innerHTML = stats.map(([ic, label, val, caption]) => `
+      <div class="income-stat">
+        <div class="label">${icon(ic)}${label}</div>
+        <div class="value">${val > 0 ? '$' + fmtMoney(val) : '—'}</div>
+        ${caption ? `<div class="caption">${caption}</div>` : ''}
+      </div>
+    `).join('') + `
+      <div class="income-stat highlight">
+        <div class="label">${icon('briefcase')}Portfolio value</div>
+        <div class="value">$${fmtMoney(portfolioValue)}</div>
+        <div class="caption">${held.length} stock holding${held.length > 1 ? 's' : ''}</div>
+      </div>
+    ` + (contributing ? `<div class="income-note">Estimated from ${contributing} active-dividend stock${contributing > 1 ? 's' : ''} you hold. Passive perks (non-cash) aren't counted here — see each stock's benefit line for those.</div>` : '');
+  }
+
+  function buyNextCandidates(){
+    const candidates = [];
+    Object.entries(stocksCache).forEach(([id, s]) => {
+      if(!s.benefit || s.benefit.type !== 'active' || !s.benefit.requirement || !s.benefit.frequency) return;
+      const w = watches[id];
+      const payout = (w && w.payoutAmount) ? Number(w.payoutAmount) : guessPayoutFromDescription(s.benefit.description);
+      if(!payout) return;
+      const bbSize = s.benefit.requirement;
+      const price = Number(s.price);
+      const cost = bbSize * price;
+      const dailyIncome = payout / s.benefit.frequency;
+      if(!cost || !dailyIncome) return;
+      candidates.push({ id, s, cost, dailyIncome, roiPctPerDay: (dailyIncome / cost) * 100, guessed: !(w && w.payoutAmount) });
+    });
+    candidates.sort((a, b) => b.roiPctPerDay - a.roiPctPerDay);
+    return candidates;
+  }
+
+  function renderBuyNextRanking(){
+    const candidates = buyNextCandidates();
+    const top = candidates.slice(0, 5);
+    if(!top.length){
+      buyNextBox.innerHTML = '';
+      return;
+    }
+    buyNextBox.innerHTML = `<h3>${icon('cart')}What should I buy next?</h3>` + top.map((c, i) => `
+      <div class="buy-next-row">
+        <span class="rank">#${i + 1}</span>
+        <span class="bn-name">${c.s.name} <span class="acr">${c.s.acronym}</span></span>
+        <span class="bn-roi">${c.roiPctPerDay.toFixed(3)}%/day</span>
+        <span class="bn-detail">First increment ~$${fmtMoney(c.cost)} → ~$${fmtMoney(c.dailyIncome)}/day${c.guessed ? ' (guessed payout — verify in-game)' : ''}</span>
+      </div>`).join('') + `<div class="income-note">Ranked by estimated daily cash return on the cost of one benefit increment. Only stocks with a detected or entered payout amount show up here — open a stock's "Alerts & position" panel to add or correct one. Passive (non-cash) perks aren't rankable this way and are left out.</div>`;
+  }
+
+  function renderBankBox(){
+    const existingInput = $('bankDepositInput');
+    const deposit = existingInput && existingInput.value ? Number(existingInput.value) : null;
+    if(!bankRates){
+      bankBoxBody.innerHTML = `<div class="empty">Connect your API key to load current bank rates from Torn.</div>`;
+      return;
+    }
+    const terms = [
+      { key: '1w', label: '7d term', days: 7 },
+      { key: '2w', label: '14d term', days: 14 },
+      { key: '1m', label: '30d term', days: 30 },
+      { key: '2m', label: '60d term', days: 60 },
+      { key: '3m', label: '90d term', days: 90 },
+    ];
+    const rows = terms.map(t => {
+      const raw = bankRates[t.key];
+      if(raw === undefined || raw === null) return null;
+      const termPct = Number(raw);
+      const apr = termPct * (365 / t.days);
+      const payout = deposit ? deposit * (termPct / 100) : null;
+      const dailyPayout = payout !== null ? payout / t.days : null;
+      return Object.assign({}, t, { termPct, apr, payout, dailyPayout });
+    }).filter(Boolean);
+    if(!rows.length){
+      bankBoxBody.innerHTML = `<div class="empty">No bank rate data in the last response.</div>`;
+      return;
+    }
+    rows.sort((a, b) => b.days - a.days); // longest term first, matching the screenshot
+    const bestApr = Math.max.apply(null, rows.map(r => r.apr));
+    const bestBank = rows.find(r => r.apr === bestApr);
+    const bestStock = buyNextCandidates()[0];
+    const bestStockApr = bestStock ? bestStock.roiPctPerDay * 365 : null;
+    const depositForCompare = deposit || 2000000000; // matches TornW3B's own "$2b if empty" fallback
+
+    const compareLine = `<div class="bank-best-line">
+      <span>${icon('bank')}Best bank: <b>${bestApr.toFixed(1)}% APR</b> (${bestBank.label})</span>
+      ${bestStockApr !== null ? `<span>${icon('trendingUp')}Best next stock increment: <b>${bestStockApr.toFixed(1)}%</b></span>` : ''}
+      ${bestStockApr !== null ? `<span>${bestApr >= bestStockApr ? 'Bank currently beats your next stock increments' : 'Your next stock increment currently beats the bank'}</span>` : ''}
+    </div>`;
+
+    bankBoxBody.innerHTML = `
+      <div class="bank-deposit-row">
+        <div class="field">
+          <label for="bankDepositInput">Deposit amount ($)</label>
+          <input type="number" id="bankDepositInput" placeholder="e.g. 2,000,000,000" value="${deposit || ''}">
+        </div>
+        <div style="font-family:var(--mono); font-size:11.5px; color:var(--bone-dim);">Enter a deposit to project bank income. Comparison above uses $${fmtMoney(2000000000)} if empty.</div>
+      </div>
+      ${compareLine}
+      <table class="bank-table">
+        <thead><tr><th>Term</th><th>APR</th><th></th></tr></thead>
+        <tbody>
+          ${rows.map(r => `<tr class="${r.apr === bestApr ? 'best' : ''}">
+            <td>${r.label}</td>
+            <td>${r.apr.toFixed(2)}% APR${r.apr === bestApr ? ' <span class="apr-best-tag">· best</span>' : ''}</td>
+            <td>${deposit || depositForCompare ? `~$${fmtMoney((deposit || depositForCompare) * (r.termPct / 100) / r.days)}/day<br><span style="color:var(--bone-dim); font-size:10.5px;">on $${fmtMoney(deposit || depositForCompare)}</span>` : ''}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="income-note">Rates pulled live from Torn's own bank API. "APR" scales each term's return out to a year for easy comparison — actual return depends on re-depositing at the same rate each time the term ends, and rates can change.</div>
+    `;
+    const newInput = $('bankDepositInput');
+    if(newInput) newInput.addEventListener('change', renderBankBox);
+  }
+
+  async function syncHoldings(){
+    if(!apiKey){ setStatus(pollStatus, 'Connect an API key first.', 'err'); return; }
+    setStatus(pollStatus, 'Syncing your holdings…');
+    try{
+      const res = await fetch(`https://api.torn.com/user/?selections=stocks&key=${encodeURIComponent(apiKey)}`, { cache: 'no-store' });
+      const data = await res.json();
+      if(data.error){
+        setStatus(pollStatus, `Couldn't sync holdings: ${data.error.error}. Your key may need the "user → stocks" selection — see "Build a key for this app" above.`, 'err');
+        return;
+      }
+      const holdings = data.stocks || {};
+      // Logged so the raw shape from Torn can actually be inspected (via browser devtools console)
+      // if syncing ever looks wrong again, instead of guessing at field names a third time.
+      console.log('[Torn Stock Alerts] Raw holdings response from Torn:', holdings);
+      let count = 0;
+      const details = [];
+      const ownedIds = new Set();
+      Object.entries(holdings).forEach(([id, entry]) => {
+        // Torn's shape for this selection can vary; check the common fields defensively.
+        // Prefer summing "transactions" first — it's the most granular, per-purchase-lot data,
+        // so it reflects new buys immediately. A static "total_shares"/"shares" field is only
+        // used as a fallback if transactions aren't present, since it may not always update.
+        let shares = 0, weightedCost = 0, earliestBuy = null;
+        if(entry.transactions && typeof entry.transactions === 'object'){
+          Object.values(entry.transactions).forEach(t => {
+            const sh = Number(t.shares) || 0;
+            if(sh <= 0) return;
+            shares += sh;
+            // Field name for per-lot price isn't consistently documented — try the likely candidates.
+            const price = Number(t.bought_price ?? t.price ?? t.cost ?? t.avg_price);
+            if(Number.isFinite(price) && price > 0) weightedCost += sh * price;
+            const boughtAt = Number(t.time_bought ?? t.time ?? t.bought_time);
+            if(Number.isFinite(boughtAt) && boughtAt > 0 && (earliestBuy === null || boughtAt < earliestBuy)){
+              earliestBuy = boughtAt;
+            }
+          });
+        }else if(typeof entry.total_shares === 'number') shares = entry.total_shares;
+        else if(typeof entry.shares === 'number') shares = entry.shares;
+
+        if(shares > 0){
+          ownedIds.add(id);
+          count++;
+          const before = watches[id] ? Number(watches[id].owned) || 0 : 0;
+          const label = stocksCache[id] ? stocksCache[id].acronym : `#${id}`;
+          details.push(`${label}: ${fmtNum(before)}→${fmtNum(shares)}`);
+          const avgPrice = weightedCost > 0 ? weightedCost / shares : null;
+          const buyDateStr = earliestBuy ? new Date(earliestBuy * 1000).toISOString().slice(0, 10) : null;
+          if(watches[id]){
+            watches[id].owned = shares;
+            if(avgPrice) watches[id].avgBuyPrice = avgPrice;
+            if(buyDateStr) watches[id].buyDate = buyDateStr;
+          }else if(stocksCache[id]){
+            const info = stocksCache[id];
+            watches[id] = { name: info.name, acronym: info.acronym, low: null, high: null, owned: shares, armedLow: true, armedHigh: true, avgBuyPrice: avgPrice, buyDate: buyDateStr };
+          }
+        }
+      });
+      // Anything we're already tracking as "owned" that Torn no longer reports a positive
+      // share count for has been sold off — clear it instead of leaving the old count stale.
+      let soldCount = 0;
+      const soldDetails = [];
+      Object.entries(watches).forEach(([id, w]) => {
+        const before = Number(w.owned) || 0;
+        if(before > 0 && !ownedIds.has(id)){
+          const label = stocksCache[id] ? stocksCache[id].acronym : `#${id}`;
+          soldDetails.push(`${label}: ${fmtNum(before)}→0`);
+          w.owned = 0;
+          soldCount++;
+        }
+      });
+      if(count === 0 && soldCount === 0){
+        setStatus(pollStatus, 'Synced — Torn reports no shares currently owned. If that looks wrong, open the browser console (F12) and check the logged raw response.', 'ok');
+      }else{
+        persistWatches();
+        renderStockList();
+        const bits = [];
+        if(details.length) bits.push(details.join(', '));
+        if(soldDetails.length) bits.push(`sold out — ${soldDetails.join(', ')}`);
+        const soldNote = soldCount ? `, cleared ${soldCount} sold-out` : '';
+        setStatus(pollStatus, `Synced ${count} stock${count === 1 ? '' : 's'}${soldNote} — ${bits.join(' | ')}. Avg buy price and buy date filled in where Torn provided them; double-check the numbers.`, 'ok');
+      }
+    }catch(e){
+      setStatus(pollStatus, `Could not reach the Torn API to sync holdings (${(e && e.message) ? e.message : e}).`, 'err');
+    }
+  }
+  syncHoldingsBtn.addEventListener('click', syncHoldings);
+
+  stockFilter.addEventListener('input', renderStockList);
+
+  watchedOnlyToggle.addEventListener('change', () => {
+    try{ localStorage.setItem(STORE_WATCHED_ONLY, watchedOnlyToggle.checked ? '1' : ''); }
+    catch(e){ /* non-fatal */ }
+    renderStockList();
+  });
+
+  function compactWatches(){
+    const out = {};
+    Object.entries(watches).forEach(([id, w]) => {
+      const c = {};
+      if(w.low !== null && w.low !== undefined) c.l = w.low;
+      if(w.high !== null && w.high !== undefined) c.h = w.high;
+      if(w.pctDropPct){ c.dp = w.pctDropPct; c.db = w.pctDropBase; }
+      if(w.pctRisePct){ c.rp = w.pctRisePct; c.rb = w.pctRiseBase; }
+      if(w.owned) c.o = w.owned;
+      if(w.avgBuyPrice) c.ab = w.avgBuyPrice;
+      if(w.lastCollected) c.lc = w.lastCollected;
+      out[id] = c;
+    });
+    return out;
+  }
+
+  function expandWatches(compact){
+    const out = {};
+    Object.entries(compact).forEach(([id, c]) => {
+      const info = stocksCache[id] || {};
+      out[id] = {
+        name: info.name || `Stock ${id}`,
+        acronym: info.acronym || '',
+        low: c.l !== undefined ? c.l : null,
+        high: c.h !== undefined ? c.h : null,
+        pctDropPct: c.dp || null,
+        pctDropBase: c.db || null,
+        pctRisePct: c.rp || null,
+        pctRiseBase: c.rb || null,
+        owned: c.o || 0,
+        avgBuyPrice: c.ab || null,
+        lastCollected: c.lc || null,
+        armedLow: true, armedHigh: true, armedPctDrop: true, armedPctRise: true, dividendNotified: false
+      };
+    });
+    return out;
+  }
+
+  function buildBackupCode(){
+    const payload = { v: 2, w: compactWatches(), b: budget };
+    return btoa(encodeURIComponent(JSON.stringify(payload)));
+  }
+
+  function loadWatchlistFromCode(raw){
+    try{
+      const payload = JSON.parse(decodeURIComponent(atob(raw.trim())));
+      if(!payload) throw new Error('bad payload');
+      if(payload.v === 2 && payload.w){
+        watches = expandWatches(payload.w);
+        if(typeof payload.b === 'number'){ budget = payload.b; budgetInput.value = budget; localStorage.setItem(STORE_BUDGET, String(budget)); }
+      }else if(payload.watches){
+        // older, uncompacted code format
+        watches = payload.watches;
+        if(typeof payload.budget === 'number'){ budget = payload.budget; budgetInput.value = budget; localStorage.setItem(STORE_BUDGET, String(budget)); }
+      }else{
+        throw new Error('bad payload');
+      }
+      persistWatches();
+      renderStockList();
+      setStatus(backupStatus, 'Watchlist loaded.', 'ok');
+      return true;
+    }catch(e){
+      setStatus(backupStatus, "That code doesn't look right — check it was copied or scanned in full.", 'err');
+      return false;
+    }
+  }
+
+  exportBtn.addEventListener('click', async () => {
+    if(!Object.keys(watches).length){ setStatus(backupStatus, 'Nothing to back up yet — watch a stock first.', 'err'); return; }
+    const code = buildBackupCode();
+    try{
+      await navigator.clipboard.writeText(code);
+      setStatus(backupStatus, 'Code copied to your clipboard.', 'ok');
+    }catch(e){
+      importInput.value = code;
+      setStatus(backupStatus, "Couldn't auto-copy — the code is in the box below, copy it manually.", 'err');
+    }
+  });
+
+  showQrBtn.addEventListener('click', () => {
+    if(!Object.keys(watches).length){ setStatus(backupStatus, 'Nothing to show yet — watch a stock first.', 'err'); return; }
+    const code = buildBackupCode();
+    qrOutput.innerHTML = '';
+    if(code.length > 1200){
+      setStatus(backupStatus, 'Your watchlist has too much detail for a reliable QR code — use "Copy watchlist code" instead.', 'err');
+      return;
+    }
+    if(typeof QRCode === 'undefined'){
+      setStatus(backupStatus, "Couldn't load the QR generator — check your connection and try again.", 'err');
+      return;
+    }
+    const inner = document.createElement('div');
+    inner.className = 'qr-output-inner';
+    qrOutput.appendChild(inner);
+    new QRCode(inner, {
+      text: code,
+      width: 260,
+      height: 260,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.L
+    });
+    setStatus(backupStatus, 'Scan this from another device with "Scan a code with your camera," or any QR scanner, then paste it above. Keep it well-lit and hold steady.', 'ok');
+  });
+
+  importBtn.addEventListener('click', () => {
+    const raw = importInput.value.trim();
+    if(!raw){ setStatus(backupStatus, 'Paste a code first.', 'err'); return; }
+    if(loadWatchlistFromCode(raw)) importInput.value = '';
+  });
+
+  // ---- QR camera scanning ----
+  let scanStream = null;
+  let scanRAF = null;
+
+  function stopScan(){
+    if(scanRAF) cancelAnimationFrame(scanRAF);
+    scanRAF = null;
+    if(scanStream){ scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+    qrVideo.style.display = 'none';
+    scanBtn.textContent = 'Scan a code with your camera';
+  }
+
+  function scanLoop(){
+    const ctx = qrCanvas.getContext('2d');
+    const tick = () => {
+      if(!scanStream) return;
+      if(qrVideo.readyState === qrVideo.HAVE_ENOUGH_DATA){
+        qrCanvas.width = qrVideo.videoWidth;
+        qrCanvas.height = qrVideo.videoHeight;
+        ctx.drawImage(qrVideo, 0, 0, qrCanvas.width, qrCanvas.height);
+        const imageData = ctx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
+        const result = typeof jsQR === 'function' ? jsQR(imageData.data, imageData.width, imageData.height) : null;
+        if(result && result.data){
+          const code = result.data;
+          stopScan();
+          loadWatchlistFromCode(code);
+          return;
+        }
+      }
+      scanRAF = requestAnimationFrame(tick);
+    };
+    scanRAF = requestAnimationFrame(tick);
+  }
+
+  scanBtn.addEventListener('click', async () => {
+    if(scanStream){ stopScan(); return; }
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      setStatus(backupStatus, 'Camera access is not available in this browser.', 'err');
+      return;
+    }
+    try{
+      scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      qrVideo.srcObject = scanStream;
+      qrVideo.style.display = 'block';
+      scanBtn.textContent = 'Cancel scan';
+      await qrVideo.play();
+      scanLoop();
+    }catch(e){
+      setStatus(backupStatus, "Could not access the camera — check your browser's permission for this site.", 'err');
+      scanStream = null;
+    }
+  });
+
+  function notify(title, body){
+    sendNotification(title, body);
+    appendAlertLog(title, body);
+    setStatus(pollStatus, `${title} — ${body}`, 'ok');
+  }
+
+  async function checkPrices(){
+    if(!apiKey){ return; }
+    try{
+      const res = await fetch(`https://api.torn.com/torn/?selections=stocks,bank&key=${encodeURIComponent(apiKey)}`);
+      const data = await res.json();
+      if(data.error){ setStatus(pollStatus, `Torn API error: ${data.error.error}`, 'err'); return; }
+      if(!data.stocks || Object.keys(data.stocks).length === 0){
+        stocksCache = {};
+        tickDirection = {};
+        renderStockList();
+        setStatus(pollStatus, 'Torn API returned no stock data — cleared instead of showing stale prices.', 'err');
+        lastCheckTime = Date.now();
+        updateCheckTimerDisplay();
+        updateTape();
+        return;
+      }
+      tickDirection = {};
+      Object.values(data.stocks).forEach(s => {
+        const old = stocksCache[s.stock_id];
+        if(old){
+          const oldP = Number(old.price);
+          const newP = Number(s.current_price);
+          if(newP > oldP) tickDirection[s.stock_id] = 'up';
+          else if(newP < oldP) tickDirection[s.stock_id] = 'down';
+        }
+        stocksCache[s.stock_id] = { name: s.name, acronym: s.acronym, price: s.current_price, benefit: s.benefit || null, totalShares: s.total_shares };
+      });
+      if(data.bank){ bankRates = data.bank; }
+      updateRanges();
+      persistRanges();
+      recordHistory();
+      persistHistory();
+      persistLastPrices();
+      lastCheckTime = Date.now();
+      updateCheckTimerDisplay();
+      updateTape();
+
+      let changed = false;
+      Object.entries(watches).forEach(([id, w]) => {
+        const cur = stocksCache[id] ? Number(stocksCache[id].price) : null;
+        if(cur === null) return;
+        if(extremeEvents[id] === 'low'){
+          notify(`${w.acronym} hit a new session low`, `Now $${cur.toFixed(2)} — the lowest this app has seen it.`);
+        }else if(extremeEvents[id] === 'high'){
+          notify(`${w.acronym} hit a new session high`, `Now $${cur.toFixed(2)} — the highest this app has seen it.`);
+        }
+        if(w.high !== null){
+          if(cur >= w.high && w.armedHigh){
+            notify(`${w.acronym} hit your high`, `Now $${cur.toFixed(2)}, at or above $${w.high}.`);
+            w.armedHigh = false; changed = true;
+          }else if(cur < w.high && !w.armedHigh){
+            w.armedHigh = true; changed = true;
+          }
+        }
+        if(w.low !== null){
+          if(cur <= w.low && w.armedLow){
+            notify(`${w.acronym} hit your low`, `Now $${cur.toFixed(2)}, at or below $${w.low}.`);
+            w.armedLow = false; changed = true;
+          }else if(cur > w.low && !w.armedLow){
+            w.armedLow = true; changed = true;
+          }
+        }
+        if(w.pctDropPct && w.pctDropBase && w.armedPctDrop){
+          const target = w.pctDropBase * (1 - w.pctDropPct / 100);
+          if(cur <= target){
+            notify(`${w.acronym} dropped ${w.pctDropPct}%`, `Now $${cur.toFixed(2)}, down from $${w.pctDropBase.toFixed(2)}.`);
+            w.armedPctDrop = false; changed = true;
+          }
+        }
+        if(w.pctRisePct && w.pctRiseBase && w.armedPctRise){
+          const target = w.pctRiseBase * (1 + w.pctRisePct / 100);
+          if(cur >= target){
+            notify(`${w.acronym} rose ${w.pctRisePct}%`, `Now $${cur.toFixed(2)}, up from $${w.pctRiseBase.toFixed(2)}.`);
+            w.armedPctRise = false; changed = true;
+          }
+        }
+        const benefit = stocksCache[id] && stocksCache[id].benefit;
+        if(w.lastCollected && benefit && benefit.type === 'active' && benefit.frequency && !w.dividendNotified){
+          const nextTime = new Date(w.lastCollected).getTime() + benefit.frequency * 86400000;
+          if(Date.now() >= nextTime){
+            notify(`${w.acronym} dividend ready`, `Your payout is ready to collect — claim it within 24h to stay on schedule.`);
+            w.dividendNotified = true; changed = true;
+          }
+        }
+      });
+      if(changed) persistWatches();
+      renderStockList();
+      setStatus(pollStatus, `Last checked ${new Date().toLocaleTimeString()}.`);
+    }catch(e){
+      const reason = (e && e.message) ? e.message : String(e);
+      setStatus(pollStatus, `Price check failed (${reason}) — will retry.`, 'err');
+    }
+  }
+
+  function startPolling(){
+    if(pollTimer) clearInterval(pollTimer);
+    const seconds = parseInt(pollIntervalSel.value, 10);
+    pollTimer = setInterval(checkPrices, seconds * 1000);
+  }
+  pollIntervalSel.addEventListener('change', startPolling);
+  checkNowBtn.addEventListener('click', checkPrices);
+
+  loadPersisted();
+  initCloud();
+
+  // ---- PWA: service worker + install prompt ----
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => { swRegistration = reg; })
+        .catch(() => { /* offline caching unavailable, app still works online */ });
+    });
+    navigator.serviceWorker.ready.then(reg => { swRegistration = reg; }).catch(() => {});
+  }
+
+  let deferredInstallPrompt = null;
+  const installBtn = $('installBtn');
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    installBtn.style.display = 'inline-block';
+  });
+  installBtn.addEventListener('click', async () => {
+    if(!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    installBtn.style.display = 'none';
+  });
+  window.addEventListener('appinstalled', () => {
+    installBtn.style.display = 'none';
+  });
+})();
+</script>
+
+</body>
+</html>
