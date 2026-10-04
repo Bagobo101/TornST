@@ -8,12 +8,10 @@
 //    serve them instantly from cache.
 //
 // CACHE_VERSION only needs bumping if you rename/remove files in STATIC_ASSETS below.
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const CACHE_NAME = `torn-stock-alerts-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
-  'icon-192.png',
-  'icon-512.png',
   'icon-192-maskable.png',
   'icon-512-maskable.png',
   'manifest.json',

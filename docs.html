@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Docs & Terms — Torn Stock Alerts</title>
-<link rel="icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192-maskable.png?v=5">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -132,6 +132,7 @@
     color:var(--gold-dim);
     margin:22px 0 8px;
   }
+  section.doc-section [id]{scroll-margin-top:110px;}
   section.doc-section p{line-height:1.7; color:var(--bone-dim); font-size:14.5px; margin:0 0 14px;}
   section.doc-section strong{color:var(--bone);}
 
@@ -166,10 +167,11 @@
   }
   table.scope-table td:first-child{border-left:1px solid var(--edge); border-radius:10px 0 0 10px; font-family:var(--mono); color:var(--gold-dim);}
   table.scope-table td:last-child{border-right:1px solid var(--edge); border-radius:0 10px 10px 0;}
+  .table-scroll{max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;}
 
-  ul.plain{margin:0 0 14px; padding-left:20px; color:var(--bone-dim); font-size:14.5px; line-height:1.7;}
-  ul.plain li{margin-bottom:6px;}
-  ul.plain strong{color:var(--bone);}
+  ul.plain, ol.plain{margin:0 0 14px; padding-left:20px; color:var(--bone-dim); font-size:14.5px; line-height:1.7;}
+  ul.plain li, ol.plain li{margin-bottom:6px;}
+  ul.plain strong, ol.plain strong{color:var(--bone);}
 
   footer.doc-footer{
     border-top:1px solid var(--edge);
@@ -181,8 +183,28 @@
   }
 
   @media (max-width:480px){
+    .top-bar{gap:8px; padding:10px 12px;}
+    .top-bar-brand{font-size:12px; white-space:nowrap;}
+    .top-bar a.back{padding:7px 10px; font-size:12px; white-space:nowrap;}
+    .wrap{padding:24px 14px 64px;}
     header.page-head h1{font-size:23px;}
-    nav.tabs{top:53px;}
+    header.page-head p{font-size:14px;}
+    nav.tabs{
+      top:49px;
+      flex-wrap:nowrap;
+      gap:7px;
+      overflow-x:auto;
+      overscroll-behavior-x:contain;
+      scrollbar-width:none;
+      -webkit-overflow-scrolling:touch;
+      margin:18px -14px 26px;
+      padding:9px 14px;
+    }
+    nav.tabs::-webkit-scrollbar{display:none;}
+    nav.tabs a{flex:0 0 auto; padding:8px 12px; font-size:12px;}
+    section.doc-section{scroll-margin-top:100px;}
+    table.scope-table{min-width:460px;}
+    .card{padding:15px 14px;}
   }
 </style>
 </head>
@@ -201,9 +223,12 @@
 
   <nav class="tabs">
     <a href="#overview">Overview</a>
+    <a href="#get-started">Getting started</a>
+    <a href="#help">App guide</a>
     <a href="#api-key">API key usage</a>
     <a href="#data-sharing">Data & sharing</a>
     <a href="#terms">Terms of Service</a>
+    <a href="#license">License</a>
   </nav>
 
   <section class="doc-section" id="overview">
@@ -214,7 +239,61 @@
       <li><strong>Torn's official API</strong> (<code>api.torn.com</code>) — for live stock prices, bank interest rates, your holdings, and your name, using your own API key.</li>
       <li><strong>Firebase Realtime Database</strong> — an optional shared price-history pool, so the price graphs fill in faster using data from every visitor, not just you.</li>
     </ul>
-    <p>This project is not made, endorsed, or supported by Torn or its developers.</p>
+    <p>Torn's developers have approved this website for publication and use. It is independently developed and operated, not an official Torn service.</p>
+  </section>
+
+  <section class="doc-section" id="get-started">
+    <h2>Get started</h2>
+    <p>Once Torn confirms your API key, this guide walks through the basic setup. The app only reads game data; it never makes trades or other in-game changes.</p>
+    <ol class="plain">
+      <li><strong>Connect a key.</strong> Open the key menu in the app and paste a Torn API key. A Public Only key is enough for stock prices and alerts. Choose <strong>Build a key for this app</strong> if you also want bank rates, automatic holdings, and your player-name greeting.</li>
+      <li><strong>Choose stocks and set alerts.</strong> Check a stock to watch it, then enter a price threshold or a percentage move. The percentage baseline is the current price when you set it.</li>
+      <li><strong>Choose how often to check.</strong> In Settings, set the polling interval. The tab must stay open for live checks; background browser tabs may be throttled.</li>
+      <li><strong>Turn on notifications.</strong> Allow browser notifications from the app if you want alerts while you're looking at another tab.</li>
+      <li><strong>Back up your watchlist.</strong> Copy its backup code or display a QR code to transfer it to another device. Your settings and watchlist are otherwise saved only in this browser.</li>
+    </ol>
+    <p>You can optionally sync owned shares with a key that includes <code>user: stocks</code>, load real historical prices from Tornsy, and set a cash budget for buy suggestions.</p>
+  </section>
+
+  <section class="doc-section" id="help">
+    <h2>App guide</h2>
+    <p>All the “?” help in the app leads here. These notes explain the controls and the information shown in each section.</p>
+    <p>The app is split into tabs: <strong>Stocks</strong> for watchlists and price checks, <strong>Portfolio</strong> for holdings and bank comparisons, <strong>Compare</strong> for relative price charts, <strong>Backup</strong> for moving your watchlist between devices, and <strong>Alerts</strong> for the alert log.</p>
+
+    <h3 id="guide-api-key">API key</h3>
+    <p>A Public Only key is enough for stock prices and alerts. The app-specific key builder selects stock prices, bank rates, your stock holdings, and your basic profile name. Keys are stored on this device and sent only to Torn's API. Logging out removes the saved key but keeps your watchlist and history.</p>
+
+    <h3 id="guide-stock-alerts">Watching stocks and reading the list</h3>
+    <p>Check a stock to watch it. Fixed “Notify below/above” prices trigger alerts at those prices. A percentage drop or rise uses the current price as its baseline when set, and alerts once it moves by that percentage. Leave fields blank to skip them.</p>
+    <p>Use <strong>Compare stocks</strong> to overlay up to five stocks as percentage changes over the selected graph range. Each line starts at that stock's first available price in the range, so different history coverage can mean different start times.</p>
+    <p>“This session” is the low and high observed by live checks since this tab was opened; it resets in a new session. The graph can include this browser's history, shared history, and (if loaded) Tornsy history, so its range can differ from the session range. “% of this session” describes where the current price falls between the session low and high; it is not a forecast.</p>
+    <p>“Watched only” filters out unchecked stocks. “Since last visit” compares the current price with the last saved visit. A new low/high badge means this check set a new record in the app's recorded data. Investor benefits are estimates based on Torn's descriptions and the shares entered. Active benefits pay out in increments; passive benefits require holding the needed shares for seven days. Enter your average buy price to see profit/loss, and “Last collected” to track the next active payout.</p>
+    <p>When a watched stock is near its session low and you have entered a budget, the app can suggest an affordable share count. Owned shares near a session high may show a “consider selling” signal. These are informational heuristics, not financial advice.</p>
+
+    <h3 id="guide-price-data">Prices, graphs, and alerts</h3>
+    <p>Prices are requested directly from Torn's official API using your key in your browser. Nothing is sent anywhere else for the price check. “Sync my holdings” makes an additional call using the <code>user: stocks</code> selection to read your share counts; this is optional, and you can enter “You own” manually instead.</p>
+    <p>The session high/low shows the range observed since you started tracking in this app, not the stock's full history. Each stock's line graph shows price points recorded by the app, not Torn's full historical chart. If shared history is enabled, visitors' price points can be combined; otherwise the graph uses this browser's checks (plus any real history you manually loaded from Tornsy).</p>
+    <p>Buy suggestions are simple heuristics based on where the price sits in the range recorded here, not financial advice. Torn's stock market can move against any pattern. Alerts fire once when a threshold is crossed and re-arm after the price moves back between thresholds. Closing the app tab pauses price checks.</p>
+
+    <h3 id="guide-settings">Settings</h3>
+    <ul class="plain">
+      <li><strong>Cash to invest:</strong> used only to estimate share counts for buy suggestions; nothing is spent automatically.</li>
+      <li><strong>Check every:</strong> controls how often prices are checked while the tab is open. More frequent checks use more of Torn's request allowance.</li>
+      <li><strong>Sort by:</strong> order the list by name, biggest recent movers, or watched stocks closest to an alert.</li>
+      <li><strong>Compact numbers:</strong> abbreviates large totals (for example, $1.2M); per-share prices stay unabridged.</li>
+      <li><strong>Graph range:</strong> changes how much history is displayed, not what the app tracks.</li>
+      <li><strong>Notifications:</strong> asks the browser to show alert pop-ups; browser permission is required.</li>
+      <li><strong>Load real price history:</strong> manually fetches roughly seven days of hourly public prices from Tornsy. It is not automatic.</li>
+      <li><strong>Reset all app data:</strong> erases the saved key, watchlist, thresholds, portfolio entries, ranges, and alert history on this device. This cannot be undone.</li>
+      <li><strong>Donate:</strong> opens the developer's Torn profile; donating is optional.</li>
+    </ul>
+
+    <h3 id="guide-holdings">Holdings, backups, and alerts</h3>
+    <p><strong>Sync my holdings</strong> reads your share counts from Torn and fills in “You own.” It requires the <code>user: stocks</code> key selection; otherwise the app reports the issue and you can enter holdings manually.</p>
+    <p>In a watched stock's “Alerts &amp; position” panel, choose a snooze duration to pause that stock's notifications and alert-log entries. Snoozing is local to that stock and saved with the watchlist; resume early at any time. Price thresholds still update while snoozed, so a threshold crossed during the pause won't send a delayed notification afterward.</p>
+    <p id="guide-backups">Your watchlist is local to this browser. Copy a backup code or QR code to transfer it to another device. QR scanning requires camera permission and HTTPS.</p>
+    <p id="guide-alert-history">Alert history lists the latest 50 price, percentage, session high/low, and dividend alerts; clearing the history does not change your alert settings.</p>
+    <p><strong>Payout per increment</strong> is the cash amount paid each time an active investor benefit pays out. The app may suggest an amount based on Torn's description, but verify it in-game; this value feeds the income summary and “what to buy next” ranking.</p>
   </section>
 
   <section class="doc-section" id="api-key">
@@ -227,15 +306,17 @@
     </div>
 
     <h3>What it's used to fetch</h3>
-    <table class="scope-table">
-      <thead><tr><th>Selection</th><th>What it's used for</th></tr></thead>
-      <tbody>
-        <tr><td>torn: stocks</td><td>Live prices for every stock, shown in the list and used for alerts.</td></tr>
-        <tr><td>torn: bank</td><td>Current city bank interest rates, shown in the bank comparator.</td></tr>
-        <tr><td>user: stocks</td><td>Your own share holdings, to auto-fill "shares owned" instead of typing it in.</td></tr>
-        <tr><td>user: basic</td><td>Your player name, only to show a "Welcome back" message.</td></tr>
-      </tbody>
-    </table>
+    <div class="table-scroll">
+      <table class="scope-table">
+        <thead><tr><th>Selection</th><th>What it's used for</th></tr></thead>
+        <tbody>
+          <tr><td>torn: stocks</td><td>Live prices for every stock, shown in the list and used for alerts.</td></tr>
+          <tr><td>torn: bank</td><td>Current city bank interest rates, shown in the bank comparator.</td></tr>
+          <tr><td>user: stocks</td><td>Your own share holdings, to auto-fill "shares owned" instead of typing it in.</td></tr>
+          <tr><td>user: basic</td><td>Your player name, only to show a "Welcome back" message.</td></tr>
+        </tbody>
+      </table>
+    </div>
     <p>A <strong>Public Only</strong> key covers prices, bank rates, and alerts — that's all most people need. The "Build a key for this app" button in the key menu creates a key with exactly these four selections and nothing more, rather than a broader key with access this app doesn't use.</p>
 
     <h3>What it's never used for</h3>
@@ -280,8 +361,8 @@
       <li>Following Torn's own rules and API terms of use is your responsibility as the key holder.</li>
     </ul>
 
-    <h3>No affiliation</h3>
-    <p>This app is an independent, unofficial project and is not affiliated with, endorsed by, or supported by Torn or its developers.</p>
+    <h3>Independent project and approval</h3>
+    <p>Torn's developers have approved this website for publication and use. The app remains independently developed and operated; this approval does not mean Torn operates or warrants the service.</p>
 
     <h3>Changes</h3>
     <p>This app, its features, and these terms may change at any time without notice, since it's maintained as a free hobby project rather than a commercial product.</p>
@@ -290,8 +371,14 @@
     <p>This is a personal project without a formal support channel. Use the source repository for issues or questions.</p>
   </section>
 
+  <section class="doc-section" id="license">
+    <h2>License</h2>
+    <p>© 2026 Bagobo [3009144]. The Torn Stock Alerts source code is licensed under the GNU General Public License, version 3 only. You may copy, distribute, and modify it under the terms in the <a href="COPYING">GNU GPL v3 license text</a>.</p>
+    <p>The license is provided as-is, without warranty. Torn Stock Alerts is independently developed and operated; Torn's approval for publication and use does not make Torn responsible for the app or its availability.</p>
+  </section>
+
   <footer class="doc-footer">
-    Torn Stock Alerts — unofficial, fan-made, not affiliated with Torn.
+    © 2026 Bagobo [3009144] · Torn Stock Alerts — independently developed; approved by Torn's developers for publication and use.
   </footer>
 </div>
 

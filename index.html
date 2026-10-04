@@ -6,8 +6,8 @@
 <title>Torn Stock Alerts</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b0e14">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192-maskable.png?v=5">
+<link rel="apple-touch-icon" href="icon-192-maskable.png?v=5">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -136,14 +136,27 @@
   }
   .dropdown-panel h3 .icon-slot{color:var(--gold);}
   @media (max-width:480px){
-    .top-bar-brand{font-size:13.5px;}
+    .top-bar{gap:6px; padding:9px 10px;}
+    .top-bar-brand{flex:none; white-space:nowrap; font-size:11.5px;}
+    .top-bar-actions{flex-wrap:nowrap; gap:4px;}
+    .top-bar-actions #getStartedBtn{padding:8px 10px; font-size:11.5px; white-space:nowrap;}
+    .top-bar-actions .icon-only-btn{width:36px; height:36px;}
+    .top-bar-actions .icon-only-btn .icon-slot,
+    .top-bar-actions .icon-only-btn .icon-slot .micro-icon{width:16px; height:16px;}
     .dropdown-panel{
       position:fixed;
-      top:64px;
+      top:58px;
       right:8px;
       left:8px;
       width:auto;
     }
+  }
+  @media (max-width:360px){
+    .top-bar{gap:4px; padding:8px 6px;}
+    .top-bar-brand{font-size:10.5px;}
+    .top-bar-actions{gap:3px;}
+    .top-bar-actions #getStartedBtn{padding:7px 8px; font-size:10.5px;}
+    .top-bar-actions .icon-only-btn{width:34px; height:34px;}
   }
 
   header.title-block{
@@ -171,6 +184,74 @@
     font-weight:700;
     font-size:15px;
     color:var(--gold) !important;
+  }
+  .getting-started-note{
+    position:fixed;
+    z-index:1100;
+    width:min(320px, calc(100vw - 24px));
+    background:var(--panel);
+    border:1px solid var(--gold-dim);
+    border-radius:14px;
+    padding:15px 16px;
+    box-shadow:0 12px 32px rgba(0,0,0,0.5);
+    transition:left 260ms cubic-bezier(0.22, 1, 0.36, 1), top 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .getting-started-note[hidden]{display:none;}
+  .getting-started-note.tour-opening{animation:tour-open 220ms cubic-bezier(0.22, 1, 0.36, 1) both;}
+  .getting-started-note.tour-closing{animation:tour-close 150ms ease-in both; pointer-events:none;}
+  .getting-started-note::before{
+    content:'';
+    position:absolute;
+    top:-7px;
+    left:var(--tour-arrow-left, 50%);
+    width:12px;
+    height:12px;
+    background:var(--panel);
+    border-top:1px solid var(--gold-dim);
+    border-left:1px solid var(--gold-dim);
+    transform:translateX(-50%) rotate(45deg);
+  }
+  .getting-started-note.above::before{
+    top:auto;
+    bottom:-7px;
+    border:0;
+    border-right:1px solid var(--gold-dim);
+    border-bottom:1px solid var(--gold-dim);
+  }
+  .getting-started-note h3{
+    margin:0 0 7px;
+    font-family:var(--slab);
+    font-size:15px;
+    color:var(--bone);
+  }
+  .getting-started-note p{
+    margin:0 0 12px;
+    color:var(--bone-dim);
+    font-size:13px;
+    line-height:1.5;
+  }
+  .tour-progress{margin-bottom:6px; color:var(--gold); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em;}
+  .tour-actions{display:flex; align-items:center; gap:8px;}
+  .tour-actions .tour-spacer{flex:1;}
+  .tour-target{outline:2px solid var(--gold); outline-offset:4px; border-radius:5px; position:relative; z-index:1001; animation:tour-highlight-in 420ms ease-out both;}
+  .top-bar .tour-target{z-index:1101;}
+  @keyframes tour-highlight-in{
+    from{outline-offset:1px; box-shadow:0 0 0 0 rgba(79,142,247,0.45);}
+    to{outline-offset:4px; box-shadow:0 0 0 7px rgba(79,142,247,0);}
+  }
+  @keyframes tour-open{
+    from{opacity:0; transform:translateY(8px) scale(0.98);}
+    to{opacity:1; transform:translateY(0) scale(1);}
+  }
+  @keyframes tour-close{
+    to{opacity:0; transform:translateY(5px) scale(0.99);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .getting-started-note{transition:none;}
+    .getting-started-note.tour-opening,.getting-started-note.tour-closing,.tour-target{animation:none;}
+  }
+  @media (max-width:480px){
+    .getting-started-note{width:min(320px, calc(100vw - 24px));}
   }
 
   section{padding:22px 20px; border-bottom:1px solid var(--edge);}
@@ -243,11 +324,16 @@
     .row{flex-direction:column;}
     .row > div{width:100%; min-width:0;}
     header.title-block h1{font-size:24px;}
+    header.title-block{padding:24px 14px 16px;}
+    section{padding:18px 14px;}
+    .footnote{padding:16px 14px 0;}
     .stock-top{flex-wrap:wrap;}
     .stock-top .price{margin-left:auto;}
     .thresh-panel{flex-direction:column;}
     .thresh-panel .field{width:100%; min-width:0; max-width:100%;}
   }
+  .license-credit{margin-top:10px; color:var(--bone-dim);}
+  .license-credit a{color:var(--gold-dim);}
 
   button, a.ghost{
     font-family:var(--slab);
@@ -774,6 +860,158 @@
     line-height:1.6;
   }
   .footnote a{color:var(--gold-dim);}
+
+  body{
+    background:
+      radial-gradient(ellipse at 50% -12%, rgba(79,142,247,0.13), transparent 44%),
+      var(--bg);
+  }
+  .wrap{max-width:1120px; padding:24px 28px 72px;}
+  .top-bar{
+    padding:12px max(22px, calc((100vw - 1120px) / 2));
+    background:color-mix(in srgb, var(--panel) 88%, transparent);
+    backdrop-filter:blur(16px);
+  }
+  .top-bar-brand{font-size:16px; letter-spacing:-0.03em;}
+  .tape-outer{
+    background:linear-gradient(90deg, #101828, #111522 48%, #101828);
+    border-bottom:1px solid rgba(79,142,247,0.4);
+  }
+  .tape-track{padding:9px 0; font-size:12px;}
+  header.title-block{
+    position:relative;
+    overflow:hidden;
+    margin:14px 0 20px;
+    padding:30px 32px;
+    border:1px solid var(--edge);
+    border-radius:22px;
+    background:
+      radial-gradient(ellipse at 92% 0%, rgba(79,142,247,0.19), transparent 44%),
+      linear-gradient(135deg, var(--panel), color-mix(in srgb, var(--panel) 78%, var(--gold)));
+    box-shadow:0 16px 40px rgba(0,0,0,0.14);
+  }
+  header.title-block h1{font-size:clamp(27px, 4vw, 36px); letter-spacing:-0.04em;}
+  header.title-block p{max-width:62ch; font-size:14.5px;}
+  section{
+    margin-bottom:18px;
+    padding:22px 24px;
+    border:1px solid var(--edge);
+    border-radius:20px;
+    background:color-mix(in srgb, var(--panel) 88%, transparent);
+    box-shadow:0 10px 28px rgba(0,0,0,0.1);
+  }
+  section h2{
+    margin-bottom:18px;
+    font-size:16px;
+    letter-spacing:-0.02em;
+  }
+  .stock-card{
+    border-radius:15px;
+    background:linear-gradient(115deg, var(--panel), color-mix(in srgb, var(--panel) 88%, var(--gold)));
+  }
+  .stock-card.checked{
+    background:linear-gradient(115deg, var(--panel), color-mix(in srgb, var(--panel) 82%, var(--gold)));
+  }
+  .bank-box,.income-stat{border-radius:15px;}
+  input,select{background:var(--panel-2); border-radius:11px;}
+  button,a.ghost{transition:background 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;}
+  button:hover,a.ghost:hover{transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,0,0,0.16);}
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.help summary:focus-visible{
+    outline:2px solid var(--gold-dim);
+    outline-offset:3px;
+  }
+  .footnote{color:var(--bone-dim);}
+  @media (max-width:700px){
+    .wrap{padding:14px 14px 48px;}
+    header.title-block{margin:8px 0 14px; padding:24px 20px; border-radius:18px;}
+    section{padding:18px 18px; border-radius:16px;}
+    .top-bar{padding:10px 14px;}
+  }
+  @media (max-width:480px){
+    .wrap{padding:10px 10px 40px;}
+    header.title-block{padding:21px 16px; margin:6px 0 12px;}
+    header.title-block h1{font-size:25px;}
+    section{padding:17px 14px; margin-bottom:12px;}
+    .top-bar{padding:9px 10px;}
+  }
+  .comparison-panel{
+    margin:14px 0 18px;
+    padding:16px;
+    border:1px solid var(--edge);
+    border-radius:16px;
+    background:var(--panel-2);
+  }
+  .comparison-panel h3{margin:0 0 5px; font-size:14px;}
+  .comparison-copy{margin:0 0 12px; color:var(--bone-dim); font-size:12px; line-height:1.5;}
+  .compare-controls{display:grid; grid-template-columns:minmax(160px, 1fr) minmax(180px, 2fr); gap:12px; align-items:start;}
+  .compare-picker{display:flex; gap:7px; flex-wrap:wrap; max-height:116px; overflow-y:auto;}
+  .compare-choice{
+    display:inline-flex; align-items:center; gap:6px; margin:0; padding:6px 9px;
+    border:1px solid var(--edge); border-radius:999px; background:var(--panel);
+    color:var(--bone-dim); font-size:11.5px; cursor:pointer;
+  }
+  .compare-choice:has(input:checked){border-color:var(--gold-dim); color:var(--bone);}
+  .compare-choice input{width:14px; height:14px; padding:0; accent-color:var(--gold);}
+  .compare-chart{margin-top:12px; min-height:80px;}
+  .compare-chart svg{display:block; width:100%; height:220px; overflow:visible;}
+  .compare-grid{stroke:var(--edge); stroke-width:1;}
+  .compare-zero{stroke:var(--bone-dim); stroke-width:1; stroke-dasharray:4 4; opacity:0.75;}
+  .compare-line{fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round;}
+  .compare-y-label,.compare-x-label{fill:var(--bone-dim); font:11px var(--mono);}
+  .compare-legend{display:flex; gap:8px 14px; flex-wrap:wrap; margin-top:8px;}
+  .compare-legend-item{font:11.5px var(--mono); color:var(--bone-dim);}
+  .compare-legend-item strong{color:var(--bone);}
+  .compare-empty{padding:20px 0; color:var(--bone-dim); font-size:12.5px;}
+  .snooze-field{flex-basis:100%; display:flex; align-items:flex-end; gap:10px;}
+  .snooze-field label{margin:0 0 6px;}
+  .snooze-field select{width:auto; min-width:145px; padding:7px 10px; font-size:12px;}
+  .snooze-status{color:var(--gold-dim); font:11px var(--mono); padding-bottom:8px;}
+  .thresh-panel .position-tags{
+    flex:0 0 100%;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
+    align-items:flex-start;
+  }
+  .position-tags .armed-tag{max-width:100%; white-space:normal; overflow-wrap:anywhere;}
+  .thresh-panel,.card-details{min-width:0; max-width:100%;}
+  @media (max-width:600px){
+    .compare-controls{grid-template-columns:1fr;}
+    .compare-chart svg{height:180px;}
+    .snooze-field{align-items:flex-start; flex-direction:column;}
+    .snooze-status{padding-bottom:0;}
+  }
+  .app-nav{
+    display:flex;
+    gap:8px;
+    margin:0 0 16px;
+    padding:6px;
+    overflow-x:auto;
+    background:var(--panel);
+    border:1px solid var(--edge);
+    border-radius:16px;
+    scrollbar-width:thin;
+  }
+  .app-nav button{
+    flex:1 0 auto;
+    min-width:100px;
+    padding:9px 14px;
+    border-color:transparent;
+    color:var(--bone-dim);
+  }
+  .app-nav button[aria-selected="true"]{
+    color:var(--bone);
+    background:var(--panel-2);
+    border-color:var(--edge);
+    box-shadow:inset 0 -2px var(--gold);
+  }
+  .app-view[hidden]{display:none;}
+  .view-heading{margin:0 0 16px; font-size:18px; letter-spacing:-0.02em;}
+  @media (max-width:600px){
+    .app-nav{gap:4px; margin-bottom:12px; border-radius:12px;}
+    .app-nav button{min-width:auto; padding:9px 12px; font-size:12px;}
+  }
 </style>
 </head>
 <body>
@@ -781,7 +1019,8 @@
 <div class="top-bar">
   <div class="top-bar-brand">Torn Stock Alerts</div>
   <div class="top-bar-actions">
-    <a href="docs.html" class="icon-only-btn" aria-label="Docs & Terms" title="Docs & Terms"><span class="icon-slot" data-icon="docs"></span></a>
+    <button type="button" class="ghost" id="getStartedBtn">Get started</button>
+    <a href="docs.html" class="icon-only-btn" id="docsMenuBtn" aria-label="Docs & Terms" title="Docs & Terms"><span class="icon-slot" data-icon="docs"></span></a>
     <div class="menu-wrap">
       <button type="button" id="keyMenuBtn" class="icon-only-btn" aria-label="API key" aria-expanded="false"><span class="icon-slot" data-icon="key"></span></button>
       <div id="keyPanel" class="dropdown-panel" hidden>
@@ -922,6 +1161,20 @@
   </div>
 </div>
 
+<div class="getting-started-note" id="gettingStartedStep" role="dialog" aria-labelledby="tourTitle" aria-describedby="tourDescription" hidden>
+  <div class="tour-content" id="tourContent">
+    <div class="tour-progress" id="tourProgress"></div>
+    <h3 id="tourTitle"></h3>
+    <p id="tourDescription"></p>
+    <div class="tour-actions">
+      <button type="button" class="ghost small" id="tourCloseBtn">Close</button>
+      <span class="tour-spacer"></span>
+      <button type="button" class="ghost small" id="tourBackBtn">Back</button>
+      <button type="button" class="primary small" id="tourNextBtn">Next</button>
+    </div>
+  </div>
+</div>
+
 <div class="tape-outer">
   <div class="tape-track" id="tapeTrack">
     <span>Connect your API key to start the tape&nbsp;&nbsp;·&nbsp;&nbsp;</span>
@@ -936,8 +1189,17 @@
     <button class="ghost" id="installBtn" style="margin-top:14px; display:none;">Install as app</button>
   </header>
 
+  <nav class="app-nav" role="tablist" aria-label="App sections">
+    <button type="button" role="tab" id="stocksTab" aria-controls="stocksView" aria-selected="true" data-app-view="stocksView">Stocks</button>
+    <button type="button" role="tab" id="portfolioTab" aria-controls="portfolioView" aria-selected="false" data-app-view="portfolioView">Portfolio</button>
+    <button type="button" role="tab" id="compareTab" aria-controls="compareView" aria-selected="false" data-app-view="compareView">Compare</button>
+    <button type="button" role="tab" id="backupTab" aria-controls="backupView" aria-selected="false" data-app-view="backupView">Backup</button>
+    <button type="button" role="tab" id="alertsTab" aria-controls="alertsView" aria-selected="false" data-app-view="alertsView">Alerts</button>
+  </nav>
+
+  <div class="app-view" id="stocksView" role="tabpanel" aria-labelledby="stocksTab">
   <section>
-    <h2>1. Choose which stocks to watch
+    <h2 id="stockSectionTitle">1. Choose which stocks to watch
       <details class="help">
         <summary>?</summary>
         <div class="help-body">
@@ -981,6 +1243,14 @@
       </div>
     </div>
     <div id="checkTimerStatus" class="status-line"></div>
+    <div id="stockList"><div class="empty">Connect your API key above to load the stock list.</div></div>
+    <div class="status-line" id="pollStatus"></div>
+  </section>
+  </div>
+
+  <div class="app-view" id="portfolioView" role="tabpanel" aria-labelledby="portfolioTab" hidden>
+  <section>
+    <h2 class="view-heading">Portfolio &amp; bank</h2>
     <div id="signalsBox" class="signals-box"></div>
     <div id="incomeSummaryBox" class="income-box"></div>
     <div id="buyNextBox" class="buy-next-box"></div>
@@ -992,12 +1262,34 @@
       </details>
     </div>
     <div id="portfolioSummary" class="status-line" style="margin-bottom:10px;"></div>
-    <div id="stockList"><div class="empty">Connect your API key above to load the stock list.</div></div>
-    <div class="status-line" id="pollStatus"></div>
   </section>
+  </div>
 
+  <div class="app-view" id="compareView" role="tabpanel" aria-labelledby="compareTab" hidden>
   <section>
-    <h2>2. Back up your watchlist
+    <h2 class="view-heading">Compare stocks</h2>
+    <div class="comparison-panel">
+      <p class="comparison-copy">Select up to five stocks to compare percentage movement over the graph range chosen in Settings. Each line starts at its first available price in that range.</p>
+      <div class="compare-controls">
+        <div>
+          <label for="compareFilter">Find stocks</label>
+          <input id="compareFilter" type="search" placeholder="Name or ticker">
+        </div>
+        <div>
+          <label>Stocks to compare</label>
+          <div id="comparePicker" class="compare-picker" role="group" aria-label="Stocks to compare">
+            <span class="empty">Connect your API key to load stocks.</span>
+          </div>
+        </div>
+      </div>
+      <div id="compareChart" class="compare-chart" aria-live="polite"></div>
+    </div>
+  </section>
+  </div>
+
+  <div class="app-view" id="backupView" role="tabpanel" aria-labelledby="backupTab" hidden>
+  <section>
+    <h2 id="backupSectionTitle">2. Back up your watchlist
       <details class="help">
         <summary>?</summary>
         <div class="help-body">Your watchlist lives only in this browser. Copy a code, or show it as a QR code, to move it to another device — open this app there and either paste the code or scan the QR with "Scan a code." Scanning needs camera permission and only works over HTTPS (which Netlify/GitHub Pages already give you).</div>
@@ -1024,9 +1316,11 @@
     <canvas id="qrCanvas" style="display:none;"></canvas>
     <div class="status-line" id="backupStatus"></div>
   </section>
+  </div>
 
+  <div class="app-view" id="alertsView" role="tabpanel" aria-labelledby="alertsTab" hidden>
   <section>
-    <h2>3. Alert history
+    <h2 id="historySectionTitle" class="view-heading">Alert history
       <details class="help">
         <summary>?</summary>
         <div class="help-body">Every alert this app has fired — price thresholds, % moves, new session highs/lows, dividend reminders — gets logged here with a timestamp, so you can see what happened while you were away instead of only the current state. Stored locally, same as everything else; kept to the most recent 50.</div>
@@ -1037,15 +1331,11 @@
     </div>
     <div id="alertLogList"><div class="empty">No alerts fired yet.</div></div>
   </section>
+  </div>
 
-  <p class="footnote">
-    Prices come straight from the official Torn API using your key, from your browser — nothing is sent anywhere else.
-    If you use "Sync my holdings," it makes one extra call to Torn's <code>user → stocks</code> selection to read your own share counts — this needs a key with that selection enabled, and is entirely optional; you can always type "You own" by hand instead.
-    High/low shows the range observed since you started tracking each stock here, not its full history.
-    The line graph on each card plots price points that have actually been checked since you started using the app — not Torn's full historical chart. Once the site owner sets up shared history, points from every visitor merge into one graph everyone sees; otherwise it's just this browser's own checks.
-    Buy suggestions are a simple heuristic — where the price sits in the range you've seen — not financial advice; the game's stock market can move against any pattern.
-    Alerts fire once per crossing, then re-arm once the price moves back between your thresholds. Closing this tab pauses checking.
-  </p>
+  <footer class="footnote">
+    <span class="license-credit">© 2026 Bagobo [3009144] · Licensed under <a href="docs.html#license">GNU GPL v3</a>.</span>
+  </footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -1058,6 +1348,27 @@
   const $ = (id) => document.getElementById(id);
   const keyInput = $('apiKey');
   const toggleKeyBtn = $('toggleKeyBtn');
+  document.addEventListener('click', (event) => {
+    const summary = event.target instanceof Element ? event.target.closest('details.help > summary') : null;
+    if(!summary) return;
+    event.preventDefault();
+    const helpText = summary.parentElement.querySelector('.help-body')?.textContent.trim().toLowerCase() || '';
+    let topic = 'guide-stock-alerts';
+    if(helpText.startsWith('an api key') || helpText.startsWith("opens torn's key creation")){
+      topic = 'guide-api-key';
+    }else if(helpText.startsWith('fetches how many shares') || helpText.startsWith('how much cash one increment')){
+      topic = 'guide-holdings';
+    }else if(helpText.startsWith('your watchlist lives only')){
+      topic = 'guide-backups';
+    }else if(helpText.startsWith('every alert this app has fired')){
+      topic = 'guide-alert-history';
+    }else if(/settings|amount of in-game money|how often the app|how the stock list is ordered|shows large totals|how far back each stock|browser's built-in notification|historical prices|wipes everything|developer's torn profile/.test(helpText)){
+      topic = 'guide-settings';
+    }else if(helpText.startsWith('app-wide options')){
+      topic = 'guide-settings';
+    }
+    window.location.href = `docs.html#${topic}`;
+  });
   keyInput.classList.add('masked'); // masked via CSS, not type="password" — keeps Chrome/etc. from treating this as a login field and offering to save it
   toggleKeyBtn.addEventListener('click', () => {
     const showing = !keyInput.classList.contains('masked');
@@ -1114,6 +1425,9 @@
   const stockFilter = $('stockFilter');
   const watchedOnlyToggle = $('watchedOnlyToggle');
   const stockList = $('stockList');
+  const compareFilter = $('compareFilter');
+  const comparePicker = $('comparePicker');
+  const compareChart = $('compareChart');
   const portfolioSummary = $('portfolioSummary');
   const signalsBox = $('signalsBox');
   const incomeSummaryBox = $('incomeSummaryBox');
@@ -1142,6 +1456,7 @@
   const settingsStatus = $('settingsStatus');
 
   let apiKey = '';
+  let apiKeyValidated = false;
   let userName = null;
   let compactNumbers = false; // display pref: e.g. $1.2M instead of $1,196,000
   let sortMode = 'default';   // display pref: 'default' | 'pctChange' | 'name' | 'distance'
@@ -1149,6 +1464,7 @@
   let theme = 'dark';         // display pref: 'dark' (default) | 'light'
   let stocksCache = {};      // id -> {name, acronym, price}
   let watches = {};          // id -> {name, acronym, low, high, armedHigh, armedLow}
+  let compareStockIds = [];
   let ranges = {};           // id -> {high, low}  (observed since tracking started)
   let priceHistory = {};     // id -> [[timestamp, price], ...] observed since tracking started, for the live graph
   let budget = null;
@@ -1157,6 +1473,8 @@
 
   const STORE_KEY = 'torn-stock-key';
   const STORE_USERNAME = 'torn-stock-username';
+  const STORE_TOUR_COMPLETED = 'torn-stock-get-started-completed';
+  const STORE_COMPARE_STOCKS = 'torn-stock-compare-stocks';
   const STORE_WATCHES = 'torn-stock-watches';
   const STORE_RANGES = 'torn-stock-ranges';
   const STORE_COMPACT = 'torn-stock-compact-numbers';
@@ -1217,6 +1535,13 @@
       if(w){ watches = JSON.parse(w); }
     }catch(e){ /* no watches saved yet */ }
     try{
+      const selected = localStorage.getItem(STORE_COMPARE_STOCKS);
+      if(selected){
+        const ids = JSON.parse(selected);
+        if(Array.isArray(ids)) compareStockIds = ids.map(String).slice(0, 5);
+      }
+    }catch(e){ console.error('Could not load compared stocks', e); }
+    try{
       const r = localStorage.getItem(STORE_RANGES);
       if(r){ ranges = JSON.parse(r); }
     }catch(e){ /* no ranges saved yet */ }
@@ -1256,7 +1581,8 @@
     startCheckTimerTick();
     if(apiKey){
       setStatus(keyStatus, 'Key loaded from this device.', 'ok');
-      await refreshStocks(true);
+      apiKeyValidated = await refreshStocks(true);
+      updateTourKeyGate();
       if(!userName) fetchUserName();
     }
   }
@@ -1662,6 +1988,150 @@
     return { svg, min, max, points: hist.length, thresholds };
   }
 
+  const COMPARE_COLORS = ['#4f8ef7', '#3ecf8e', '#f4b942', '#e879f9', '#fb7185'];
+
+  function renderStockComparison(){
+    const filter = compareFilter.value.trim().toLowerCase();
+    const available = Object.entries(stocksCache)
+      .map(([id, stock]) => ({ id, ...stock }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    comparePicker.replaceChildren();
+    if(!available.length){
+      comparePicker.innerHTML = '<span class="empty">Connect your API key to load stocks.</span>';
+      compareChart.innerHTML = '';
+      return;
+    }
+    const availableIds = new Set(available.map(stock => stock.id));
+    const validSelection = compareStockIds.filter(id => availableIds.has(id));
+    if(validSelection.length !== compareStockIds.length){
+      compareStockIds = validSelection;
+      try{ localStorage.setItem(STORE_COMPARE_STOCKS, JSON.stringify(compareStockIds)); }
+      catch(e){ console.error('Could not save compared stocks', e); }
+    }
+
+    const filtered = available.filter(stock =>
+      !filter || stock.name.toLowerCase().includes(filter) || stock.acronym.toLowerCase().includes(filter)
+    );
+    filtered.forEach(stock => {
+      const label = document.createElement('label');
+      label.className = 'compare-choice';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.value = stock.id;
+      checkbox.checked = compareStockIds.includes(stock.id);
+      checkbox.disabled = !checkbox.checked && compareStockIds.length >= 5;
+      const text = document.createElement('span');
+      text.textContent = `${stock.name} (${stock.acronym})`;
+      label.append(checkbox, text);
+      comparePicker.appendChild(label);
+    });
+    if(!filtered.length){
+      const empty = document.createElement('span');
+      empty.className = 'empty';
+      empty.textContent = 'No stocks match that filter.';
+      comparePicker.appendChild(empty);
+    }
+
+    const selected = compareStockIds
+      .map(id => available.find(stock => stock.id === id))
+      .filter(Boolean);
+    if(selected.length < 2){
+      compareChart.innerHTML = '<div class="compare-empty">Choose two or more stocks to see how their prices moved relative to their first available price in the selected graph range.</div>';
+      return;
+    }
+
+    const now = Date.now();
+    const rangeMs = GRAPH_RANGE_MS[graphRange];
+    const cutoff = rangeMs ? now - rangeMs : -Infinity;
+    const series = selected.map((stock, index) => {
+      let history = cloudEnabled ? mergedHistoryFor(stock.id) : asPointArray(priceHistory[stock.id]);
+      history = mergeWithTornsy(stock.id, history || [])
+        .filter(([time, price]) => time >= cutoff && Number.isFinite(price) && price > 0);
+      if(history.length && Number.isFinite(Number(stock.price)) && Number(stock.price) > 0){
+        const last = history[history.length - 1];
+        if(last[0] < now) history.push([now, Number(stock.price)]);
+        else history[history.length - 1] = [now, Number(stock.price)];
+      }
+      if(history.length < 2) return null;
+      const baseline = history[0][1];
+      if(!baseline) return null;
+      return {
+        id: stock.id,
+        name: stock.name,
+        acronym: stock.acronym,
+        color: COMPARE_COLORS[index % COMPARE_COLORS.length],
+        points: history.map(([time, price]) => ({ time, change: ((price - baseline) / baseline) * 100 }))
+      };
+    }).filter(Boolean);
+
+    if(!series.length){
+      compareChart.innerHTML = '<div class="compare-empty">Not enough price history in this range yet. The comparison will appear after more prices are recorded.</div>';
+      return;
+    }
+
+    const startTime = rangeMs ? cutoff : Math.min(...series.map(item => item.points[0].time));
+    const endTime = Math.max(now, startTime + 1);
+    const changes = series.flatMap(item => item.points.map(point => point.change));
+    let minChange = Math.min(0, ...changes);
+    let maxChange = Math.max(0, ...changes);
+    if(minChange === maxChange){ minChange -= 1; maxChange += 1; }
+    const padding = Math.max((maxChange - minChange) * 0.08, 0.25);
+    minChange -= padding;
+    maxChange += padding;
+
+    const width = 800, height = 220;
+    const left = 54, right = 12, top = 12, bottom = 28;
+    const plotWidth = width - left - right;
+    const plotHeight = height - top - bottom;
+    const x = time => left + ((time - startTime) / (endTime - startTime)) * plotWidth;
+    const y = value => top + ((maxChange - value) / (maxChange - minChange)) * plotHeight;
+    const ticks = [0, 1, 2, 3].map(i => maxChange - (maxChange - minChange) * i / 3);
+    const grid = ticks.map(value =>
+      `<g><line class="${Math.abs(value) < 0.0001 ? 'compare-zero' : 'compare-grid'}" x1="${left}" y1="${y(value).toFixed(1)}" x2="${width - right}" y2="${y(value).toFixed(1)}"/><text class="compare-y-label" x="${left - 8}" y="${(y(value) + 4).toFixed(1)}" text-anchor="end">${value.toFixed(1)}%</text></g>`
+    ).join('');
+    const lines = series.map(item => {
+      const points = item.points.map(point => `${x(point.time).toFixed(1)},${y(point.change).toFixed(1)}`).join(' ');
+      return `<polyline class="compare-line" points="${points}" stroke="${item.color}"/>`;
+    }).join('');
+    const firstLabel = new Date(startTime).toLocaleDateString();
+    const lastLabel = new Date(endTime).toLocaleDateString();
+    const legend = series.map(item => {
+      const currentChange = item.points[item.points.length - 1].change;
+      const sign = currentChange > 0 ? '+' : '';
+      return `<span class="compare-legend-item"><strong style="color:${item.color};">● ${item.acronym}</strong> ${sign}${currentChange.toFixed(2)}%</span>`;
+    }).join('');
+
+    compareChart.innerHTML = `
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Selected stock prices compared as percentage change">
+        <line class="compare-grid" x1="${left}" y1="${top}" x2="${left}" y2="${height - bottom}"/>
+        ${grid}
+        <line class="compare-grid" x1="${left}" y1="${height - bottom}" x2="${width - right}" y2="${height - bottom}"/>
+        ${lines}
+        <text class="compare-x-label" x="${left}" y="${height - 7}">${firstLabel}</text>
+        <text class="compare-x-label" x="${width - right}" y="${height - 7}" text-anchor="end">${lastLabel}</text>
+      </svg>
+      <div class="compare-legend">${legend}</div>`;
+  }
+
+  compareFilter.addEventListener('input', renderStockComparison);
+  comparePicker.addEventListener('change', event => {
+    const checkbox = event.target.closest('input[type="checkbox"]');
+    if(!checkbox) return;
+    const id = checkbox.value;
+    if(checkbox.checked){
+      if(compareStockIds.length >= 5){
+        checkbox.checked = false;
+        return;
+      }
+      compareStockIds.push(id);
+    }else{
+      compareStockIds = compareStockIds.filter(selectedId => selectedId !== id);
+    }
+    try{ localStorage.setItem(STORE_COMPARE_STOCKS, JSON.stringify(compareStockIds)); }
+    catch(e){ console.error('Could not save compared stocks', e); }
+    renderStockComparison();
+  });
+
   let sparkTooltipEl = null;
   function ensureSparkTooltip(){
     if(sparkTooltipEl) return sparkTooltipEl;
@@ -1750,7 +2220,7 @@
 
   resetAllBtn.addEventListener('click', () => {
     if(resetAllBtn.dataset.confirming === '1'){
-      [STORE_KEY, STORE_USERNAME, STORE_WATCHES, STORE_RANGES, STORE_BUDGET, STORE_WATCHED_ONLY, STORE_LAST_PRICES, STORE_ALERT_LOG, STORE_TORNSY_PROMPT_SEEN, STORE_TORNSY_HISTORY, STORE_HISTORY].forEach(k => {
+      [STORE_KEY, STORE_USERNAME, STORE_WATCHES, STORE_RANGES, STORE_BUDGET, STORE_WATCHED_ONLY, STORE_LAST_PRICES, STORE_ALERT_LOG, STORE_TORNSY_PROMPT_SEEN, STORE_TORNSY_HISTORY, STORE_HISTORY, STORE_COMPARE_STOCKS].forEach(k => {
         try{ localStorage.removeItem(k); }catch(e){ /* non-fatal */ }
       });
       location.reload();
@@ -1800,10 +2270,17 @@
   $('saveKeyBtn').addEventListener('click', async () => {
     apiKey = keyInput.value.trim();
     if(!apiKey){ setStatus(keyStatus, 'Enter a key first.', 'err'); return; }
+    apiKeyValidated = false;
+    updateTourKeyGate();
+    const submittedKey = apiKey;
     try{ localStorage.setItem(STORE_KEY, apiKey); }
     catch(e){ console.error(e); }
     setStatus(keyStatus, 'Checking key…');
-    await refreshStocks(true);
+    const keyWorks = await refreshStocks(true);
+    if(keyInput.value.trim() === submittedKey && apiKey === submittedKey){
+      apiKeyValidated = keyWorks;
+      updateTourKeyGate();
+    }
     fetchUserName();
   });
 
@@ -1811,6 +2288,8 @@
     if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
     if(checkTickTimer){ clearInterval(checkTickTimer); checkTickTimer = null; }
     apiKey = '';
+    apiKeyValidated = false;
+    updateTourKeyGate();
     keyInput.value = '';
     userName = null;
     try{ localStorage.removeItem(STORE_KEY); }catch(e){ /* non-fatal */ }
@@ -1853,6 +2332,13 @@
       }
     }
   }
+
+  keyInput.addEventListener('input', () => {
+    if(keyInput.value.trim() !== apiKey){
+      apiKeyValidated = false;
+      updateTourKeyGate();
+    }
+  });
 
   notifBtn.addEventListener('click', async () => {
     if(!('Notification' in window)){
@@ -1909,7 +2395,7 @@
   }
 
   async function refreshStocks(announce){
-    if(!apiKey) return;
+    if(!apiKey) return false;
     let data;
     try{
       const res = await fetch(`https://api.torn.com/torn/?selections=stocks,bank&key=${encodeURIComponent(apiKey)}`);
@@ -1917,11 +2403,11 @@
     }catch(e){
       console.error('Torn API request failed', e);
       setStatus(keyStatus, `Could not reach the Torn API (${(e && e.message) ? e.message : e}). Check your connection.`, 'err');
-      return;
+      return false;
     }
     if(data.error){
       setStatus(keyStatus, `Torn API error: ${data.error.error}`, 'err');
-      return;
+      return false;
     }
     try{
       stocksCache = {};
@@ -1933,7 +2419,7 @@
         updateCheckTimerDisplay();
         updateTape();
         renderStockList();
-        return;
+        return false;
       }
       Object.values(data.stocks).forEach(s => {
         if(prevVisitPrices[s.stock_id] !== undefined){
@@ -1955,11 +2441,13 @@
       updateTape();
       renderStockList();
       startPolling();
+      return true;
     }catch(e){
       // The key worked and data arrived fine — this is a rendering bug, not a connection problem,
       // so don't tell the user their key/connection is broken. Log it in full for debugging.
       console.error('Failed to render stock list after a successful Torn API response', e);
       if(announce) setStatus(keyStatus, `Key works, but the display hit a snag (${(e && e.message) ? e.message : e}). Try refreshing the page.`, 'err');
+      return false;
     }
   }
 
@@ -2031,6 +2519,7 @@
   }
 
   function renderStockList(){
+    renderStockComparison();
     const term = stockFilter.value.trim().toLowerCase();
     const watchedOnly = watchedOnlyToggle.checked;
     const all = sortStocks(
@@ -2300,6 +2789,20 @@
               <label>Or if it rises %</label>
               <input type="number" step="0.1" class="pct-rise-input" data-id="${s.id}" value="${w && w.pctRisePct ? w.pctRisePct : ''}" placeholder="e.g. 5">
             </div>
+            <div class="field snooze-field">
+              <div>
+                <label for="snooze-${s.id}">Pause this stock's alerts</label>
+                <select id="snooze-${s.id}" class="snooze-select" data-id="${s.id}">
+                  <option value="">Snooze alerts…</option>
+                  <option value="3600000">1 hour</option>
+                  <option value="14400000">4 hours</option>
+                  <option value="28800000">8 hours</option>
+                  <option value="86400000">24 hours</option>
+                  ${w && Number(w.snoozedUntil) > Date.now() ? '<option value="resume">Resume alerts</option>' : ''}
+                </select>
+              </div>
+              ${w && Number(w.snoozedUntil) > Date.now() ? `<span class="snooze-status">Paused until ${new Date(Number(w.snoozedUntil)).toLocaleString()}</span>` : ''}
+            </div>
             ${(() => {
               const lots = lotsOf(w);
               const multi = lots.length > 1;
@@ -2365,7 +2868,7 @@
               </label>
               <input type="number" step="1" class="payout-input" data-id="${s.id}" value="${w && w.payoutAmount ? w.payoutAmount : ''}" placeholder="${guessPayoutFromDescription(s.benefit.description) || 'e.g. 992853'}">
             </div>` : ''}
-            ${w && w.owned ? `<div class="field" style="display:flex; align-items:flex-end; gap:6px; flex-wrap:wrap;">
+            ${w && w.owned ? `<div class="field position-tags" style="display:flex; gap:6px; flex-wrap:wrap;">
               <span class="armed-tag" style="border-color:var(--gold-dim); color:var(--gold-dim);">worth $${fmtMoney(w.owned * Number(s.price))}</span>
               <span class="armed-tag" title="Torn takes a 0.1% cut on stock sales">sell now: ~$${fmtMoney(netSellProceeds(w.owned, Number(s.price)))} (after 0.1% fee)</span>
               ${w.avgBuyPrice ? (() => {
@@ -2424,6 +2927,18 @@
         }else{
           w.owned = inp.value === '' ? 0 : parseFloat(inp.value);
         }
+        persistWatches();
+        renderStockList();
+      });
+    });
+
+    stockList.querySelectorAll('.snooze-select').forEach(select => {
+      select.addEventListener('change', () => {
+        const watch = watches[select.dataset.id];
+        if(!watch) return;
+        if(select.value === 'resume') watch.snoozedUntil = null;
+        else if(select.value) watch.snoozedUntil = Date.now() + Number(select.value);
+        else return;
         persistWatches();
         renderStockList();
       });
@@ -2581,7 +3096,7 @@
 
   function closeAllMenus(){
     document.querySelectorAll('.dropdown-panel').forEach(p => { p.hidden = true; });
-    document.querySelectorAll('.icon-only-btn').forEach(b => b.setAttribute('aria-expanded', 'false'));
+    document.querySelectorAll('.icon-only-btn, #getStartedBtn').forEach(b => b.setAttribute('aria-expanded', 'false'));
   }
   function setupMenu(btnId, panelId){
     const btn = $(btnId);
@@ -2599,8 +3114,201 @@
   }
   setupMenu('keyMenuBtn', 'keyPanel');
   setupMenu('settingsMenuBtn', 'settingsPanel');
-  document.addEventListener('click', closeAllMenus);
-  document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeAllMenus(); });
+  const appTabs = Array.from(document.querySelectorAll('[data-app-view]'));
+  function showAppView(viewId){
+    const activeView = document.getElementById(viewId);
+    if(!activeView) return;
+    document.querySelectorAll('.app-view').forEach(view => {
+      view.hidden = view !== activeView;
+    });
+    appTabs.forEach(tab => {
+      const selected = tab.dataset.appView === viewId;
+      tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+      tab.tabIndex = selected ? 0 : -1;
+    });
+    if(!tourPanel.hidden) positionTourPanel();
+  }
+  appTabs.forEach((tab, index) => {
+    tab.tabIndex = tab.getAttribute('aria-selected') === 'true' ? 0 : -1;
+    tab.addEventListener('click', () => {
+      if(!tourPanel.hidden) closeTour();
+      showAppView(tab.dataset.appView);
+    });
+    tab.addEventListener('keydown', event => {
+      if(event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      const direction = event.key === 'ArrowRight' ? 1 : -1;
+      const next = appTabs[(index + direction + appTabs.length) % appTabs.length];
+      next.focus();
+      showAppView(next.dataset.appView);
+    });
+  });
+  const getStartedBtn = $('getStartedBtn');
+  try{
+    getStartedBtn.hidden = localStorage.getItem(STORE_TOUR_COMPLETED) === '1';
+  }catch(e){
+    console.error('Could not load the get-started tour state', e);
+  }
+  const tourPanel = $('gettingStartedStep');
+  let tourCloseTimer = null;
+  const tourSteps = [
+    {
+      target: '#keyMenuBtn',
+      title: 'Connect your API key',
+      description: 'Enter a Torn API key and select Save key. Public Only is enough for stock prices and alerts. The key is stored on this device and sent only to Torn. This step unlocks after Torn confirms your key.',
+      keyPanel: true
+    },
+    {
+      target: '#stockSectionTitle',
+      title: 'Choose stocks and set alerts',
+      description: 'Check the stocks you want to watch, then set a price threshold or percentage move to choose when you want an alert.'
+    },
+    {
+      target: '#backupSectionTitle',
+      title: 'Back up your watchlist',
+      description: 'Your watchlist is saved in this browser. Copy a backup code or show it as a QR code to move it to another device.',
+      view: 'backupView'
+    },
+    {
+      target: '#historySectionTitle',
+      title: 'Review alert history',
+      description: 'See recent price alerts here. Clearing this history removes the log but does not change your watchlist or alert settings.',
+      view: 'alertsView'
+    },
+    {
+      target: '#settingsMenuBtn',
+      title: 'Explore Settings',
+      description: 'Open the gear menu to adjust the check interval, notifications, display options, graph range, and other app settings.'
+    },
+    {
+      target: '#pollInterval',
+      title: 'Choose how often to check',
+      description: 'Set how frequently prices are checked while this tab is open. Shorter intervals use more of your Torn API request allowance.',
+      settings: true
+    },
+    {
+      target: '#notifBtn',
+      title: 'Turn on notifications',
+      description: 'Enable browser notifications if you want alerts while viewing another tab. Your browser will ask for permission.',
+      settings: true
+    },
+    {
+      target: '#docsMenuBtn',
+      title: 'Read the Docs',
+      description: 'Open the document icon for the app guide, API key details, data-sharing information, and terms of service.'
+    }
+  ];
+  let activeTourStep = -1;
+
+  function updateTourKeyGate(){
+    if(activeTourStep !== 0 || tourPanel.hidden) return;
+    $('tourNextBtn').disabled = !apiKeyValidated;
+    if(apiKeyValidated){
+      $('tourDescription').textContent = 'Your API key is confirmed. Select Next when you are ready to continue.';
+    }else{
+      $('tourDescription').textContent = tourSteps[0].description;
+    }
+  }
+
+  function positionTourPanel(){
+    if(tourPanel.hidden || activeTourStep < 0) return;
+    const target = document.querySelector(tourSteps[activeTourStep].target);
+    if(!target) return;
+    const targetRect = target.getBoundingClientRect();
+    const anchorRect = tourSteps[activeTourStep].keyPanel ? $('keyPanel').getBoundingClientRect() : targetRect;
+    const panelRect = tourPanel.getBoundingClientRect();
+    const margin = 12;
+    const left = Math.max(margin, Math.min(
+      targetRect.left + targetRect.width / 2 - panelRect.width / 2,
+      window.innerWidth - panelRect.width - margin
+    ));
+    const below = anchorRect.bottom + 12;
+    const above = anchorRect.top - panelRect.height - 12;
+    const placeAbove = below + panelRect.height > window.innerHeight - margin && above >= margin;
+    const preferredTop = placeAbove ? above : below;
+    const top = Math.max(margin, Math.min(preferredTop, window.innerHeight - panelRect.height - margin));
+    tourPanel.classList.toggle('above', placeAbove);
+    tourPanel.style.left = `${left}px`;
+    tourPanel.style.top = `${Math.max(margin, top)}px`;
+    tourPanel.style.setProperty('--tour-arrow-left', `${Math.max(12, Math.min(panelRect.width - 12, targetRect.left + targetRect.width / 2 - left))}px`);
+  }
+
+  function closeTour(returnFocus = true){
+    document.querySelectorAll('.tour-target').forEach(el => el.classList.remove('tour-target'));
+    activeTourStep = -1;
+    tourPanel.classList.remove('tour-opening');
+    tourPanel.classList.add('tour-closing');
+    clearTimeout(tourCloseTimer);
+    const closeDelay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 170;
+    tourCloseTimer = setTimeout(() => {
+      tourPanel.hidden = true;
+      tourPanel.classList.remove('tour-closing');
+    }, closeDelay);
+    if(returnFocus) getStartedBtn.focus();
+  }
+  tourPanel.addEventListener('animationend', event => {
+    if(event.animationName === 'tour-open') tourPanel.classList.remove('tour-opening');
+  });
+
+  function showTourStep(index){
+    activeTourStep = Math.max(0, Math.min(index, tourSteps.length - 1));
+    const step = tourSteps[activeTourStep];
+    showAppView(step.view || 'stocksView');
+    const target = document.querySelector(step.target);
+    if(!target) return;
+    clearTimeout(tourCloseTimer);
+    tourPanel.classList.remove('tour-closing');
+    const isOpening = tourPanel.hidden;
+    if(isOpening) tourPanel.classList.add('tour-opening');
+    document.querySelectorAll('.tour-target').forEach(el => el.classList.remove('tour-target'));
+    closeAllMenus();
+    if(step.keyPanel){
+      $('keyPanel').hidden = false;
+      $('keyMenuBtn').setAttribute('aria-expanded', 'true');
+    }
+    if(step.settings){
+      $('settingsPanel').hidden = false;
+      $('settingsMenuBtn').setAttribute('aria-expanded', 'true');
+    }
+    tourPanel.hidden = false;
+    $('tourProgress').textContent = `Step ${activeTourStep + 1} of ${tourSteps.length}`;
+    $('tourTitle').textContent = step.title;
+    $('tourDescription').textContent = step.description;
+    $('tourBackBtn').disabled = activeTourStep === 0;
+    $('tourNextBtn').textContent = activeTourStep === tourSteps.length - 1 ? 'Done' : 'Next';
+    $('tourNextBtn').disabled = activeTourStep === 0 && !apiKeyValidated;
+    target.classList.add('tour-target');
+    if(activeTourStep > 0){
+      const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+      target.scrollIntoView({ behavior, block: 'center' });
+    }
+    positionTourPanel();
+  }
+
+  $('getStartedBtn').addEventListener('click', () => showTourStep(0));
+  $('tourBackBtn').addEventListener('click', () => showTourStep(activeTourStep - 1));
+  $('tourNextBtn').addEventListener('click', () => {
+    if(activeTourStep === tourSteps.length - 1){
+      try{ localStorage.setItem(STORE_TOUR_COMPLETED, '1'); }
+      catch(e){ console.error('Could not save the completed get-started tour state', e); }
+      closeTour(false);
+      getStartedBtn.hidden = true;
+    }
+    else showTourStep(activeTourStep + 1);
+  });
+  $('tourCloseBtn').addEventListener('click', closeTour);
+  tourPanel.addEventListener('click', event => event.stopPropagation());
+  window.addEventListener('scroll', positionTourPanel, true);
+  window.addEventListener('resize', positionTourPanel);
+  document.addEventListener('click', () => {
+    if(tourPanel.hidden) closeAllMenus();
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape'){
+      closeAllMenus();
+      if(!tourPanel.hidden) closeTour();
+    }
+  });
 
   function activeBenefitInfo(s, w){
     if(!s.benefit || s.benefit.type !== 'active' || !s.benefit.requirement) return null;
@@ -2873,6 +3581,7 @@
       if(w.avgBuyPrice) c.ab = w.avgBuyPrice;
       if(w.buyDate) c.bd = w.buyDate;
       if(w.lastCollected) c.lc = w.lastCollected;
+      if(Number(w.snoozedUntil) > Date.now()) c.sn = w.snoozedUntil;
       if(w.lots && w.lots.length > 1) c.pl = w.lots.map(l => [l.date || null, l.shares, l.price || null]);
       out[id] = c;
     });
@@ -2896,6 +3605,7 @@
         avgBuyPrice: c.ab || null,
         buyDate: c.bd || null,
         lastCollected: c.lc || null,
+        snoozedUntil: c.sn || null,
         lots: c.pl ? c.pl.map(t => ({ date: t[0], shares: t[1], price: t[2] })) : null,
         armedLow: true, armedHigh: true, armedPctDrop: true, armedPctRise: true, dividendNotified: false
       };
@@ -3029,7 +3739,8 @@
     }
   });
 
-  function notify(title, body){
+  function notify(title, body, stockId){
+    if(stockId && watches[stockId] && Number(watches[stockId].snoozedUntil) > Date.now()) return;
     sendNotification(title, body);
     appendAlertLog(title, body);
     setStatus(pollStatus, `${title} — ${body}`, 'ok');
@@ -3077,13 +3788,13 @@
         const cur = stocksCache[id] ? Number(stocksCache[id].price) : null;
         if(cur === null) return;
         if(extremeEvents[id] === 'low'){
-          notify(`${w.acronym} hit a new session low`, `Now $${cur.toFixed(2)} — the lowest this app has seen it.`);
+          notify(`${w.acronym} hit a new session low`, `Now $${cur.toFixed(2)} — the lowest this app has seen it.`, id);
         }else if(extremeEvents[id] === 'high'){
-          notify(`${w.acronym} hit a new session high`, `Now $${cur.toFixed(2)} — the highest this app has seen it.`);
+          notify(`${w.acronym} hit a new session high`, `Now $${cur.toFixed(2)} — the highest this app has seen it.`, id);
         }
         if(w.high !== null){
           if(cur >= w.high && w.armedHigh){
-            notify(`${w.acronym} hit your high`, `Now $${cur.toFixed(2)}, at or above $${w.high}.`);
+            notify(`${w.acronym} hit your high`, `Now $${cur.toFixed(2)}, at or above $${w.high}.`, id);
             w.armedHigh = false; changed = true;
           }else if(cur < w.high && !w.armedHigh){
             w.armedHigh = true; changed = true;
@@ -3091,7 +3802,7 @@
         }
         if(w.low !== null){
           if(cur <= w.low && w.armedLow){
-            notify(`${w.acronym} hit your low`, `Now $${cur.toFixed(2)}, at or below $${w.low}.`);
+            notify(`${w.acronym} hit your low`, `Now $${cur.toFixed(2)}, at or below $${w.low}.`, id);
             w.armedLow = false; changed = true;
           }else if(cur > w.low && !w.armedLow){
             w.armedLow = true; changed = true;
@@ -3100,14 +3811,14 @@
         if(w.pctDropPct && w.pctDropBase && w.armedPctDrop){
           const target = w.pctDropBase * (1 - w.pctDropPct / 100);
           if(cur <= target){
-            notify(`${w.acronym} dropped ${w.pctDropPct}%`, `Now $${cur.toFixed(2)}, down from $${w.pctDropBase.toFixed(2)}.`);
+            notify(`${w.acronym} dropped ${w.pctDropPct}%`, `Now $${cur.toFixed(2)}, down from $${w.pctDropBase.toFixed(2)}.`, id);
             w.armedPctDrop = false; changed = true;
           }
         }
         if(w.pctRisePct && w.pctRiseBase && w.armedPctRise){
           const target = w.pctRiseBase * (1 + w.pctRisePct / 100);
           if(cur >= target){
-            notify(`${w.acronym} rose ${w.pctRisePct}%`, `Now $${cur.toFixed(2)}, up from $${w.pctRiseBase.toFixed(2)}.`);
+            notify(`${w.acronym} rose ${w.pctRisePct}%`, `Now $${cur.toFixed(2)}, up from $${w.pctRiseBase.toFixed(2)}.`, id);
             w.armedPctRise = false; changed = true;
           }
         }
@@ -3115,7 +3826,7 @@
         if(w.lastCollected && benefit && benefit.type === 'active' && benefit.frequency && !w.dividendNotified){
           const nextTime = new Date(w.lastCollected).getTime() + benefit.frequency * 86400000;
           if(Date.now() >= nextTime){
-            notify(`${w.acronym} dividend ready`, `Your payout is ready to collect — claim it within 24h to stay on schedule.`);
+            notify(`${w.acronym} dividend ready`, `Your payout is ready to collect — claim it within 24h to stay on schedule.`, id);
             w.dividendNotified = true; changed = true;
           }
         }
