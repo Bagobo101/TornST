@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">Expanded stock price graph mockup</title>
+  <desc id="desc">Illustrative dark-themed stock chart with a selected point, timestamp, price, and graph controls.</desc>
+  <defs>
+    <linearGradient id="bg" x2="0" y2="1">
+      <stop stop-color="#171c28"/>
+      <stop offset="1" stop-color="#10141d"/>
+    </linearGradient>
+    <linearGradient id="area" x2="0" y2="1">
+      <stop stop-color="#3ecf8e" stop-opacity=".24"/>
+      <stop offset="1" stop-color="#3ecf8e" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000" flood-opacity=".34"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="680" rx="28" fill="#0b0e14"/>
+  <rect x="30" y="30" width="1140" height="620" rx="22" fill="url(#bg)" stroke="#30394b" filter="url(#shadow)"/>
+  <rect x="30" y="30" width="1140" height="62" rx="22" fill="#131720"/>
+  <path d="M30 70v22h1140V70" fill="#131720"/>
+  <circle cx="68" cy="61" r="7" fill="#f0576b"/>
+  <circle cx="94" cy="61" r="7" fill="#f4b942"/>
+  <circle cx="120" cy="61" r="7" fill="#3ecf8e"/>
+  <text x="600" y="68" fill="#9da7bb" font-family="Inter,Segoe UI,sans-serif" font-size="17" text-anchor="middle">Torn Stock Alerts · illustrative preview</text>
+  <text x="76" y="139" fill="#e7eaf1" font-family="Inter,Segoe UI,sans-serif" font-size="31" font-weight="700">Torn City Motors (TCM)</text>
+  <text x="76" y="171" fill="#9da7bb" font-family="Inter,Segoe UI,sans-serif" font-size="17">Expanded price history · graph range selected in Settings</text>
+  <rect x="76" y="194" width="1048" height="62" rx="12" fill="#1b2230" stroke="#30394b"/>
+  <text x="98" y="232" fill="#c8d0df" font-family="IBM Plex Mono,Consolas,monospace" font-size="19">Oct 4, 2026, 10:42 AM</text>
+  <text x="610" y="232" fill="#e7eaf1" font-family="IBM Plex Mono,Consolas,monospace" font-size="22" font-weight="600">$742.35</text>
+  <text x="767" y="232" fill="#3ecf8e" font-family="IBM Plex Mono,Consolas,monospace" font-size="19">+2.40% from first point</text>
+  <g stroke="#30394b" stroke-width="1">
+    <path d="M168 304H1090M168 374H1090M168 444H1090M168 514H1090"/>
+    <path d="M168 294V526M399 294V526M630 294V526M861 294V526M1090 294V526" opacity=".38"/>
+  </g>
+  <g fill="#9da7bb" font-family="IBM Plex Mono,Consolas,monospace" font-size="15" text-anchor="end">
+    <text x="151" y="310">$780.00</text>
+    <text x="151" y="380">$760.00</text>
+    <text x="151" y="450">$740.00</text>
+    <text x="151" y="520">$720.00</text>
+  </g>
+  <path d="M168 468 L246 439 L322 454 L399 399 L476 416 L553 371 L630 389 L707 347 L784 363 L861 331 L938 358 L1015 315 L1090 341 L1090 526 L168 526Z" fill="url(#area)"/>
+  <polyline points="168,468 246,439 322,454 399,399 476,416 553,371 630,389 707,347 784,363 861,331 938,358 1015,315 1090,341" fill="none" stroke="#3ecf8e" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M784 294V526" stroke="#7ba7f0" stroke-width="2" stroke-dasharray="7 7"/>
+  <circle cx="784" cy="363" r="9" fill="#4f8ef7" stroke="#171c28" stroke-width="5"/>
+  <g fill="#9da7bb" font-family="IBM Plex Mono,Consolas,monospace" font-size="14">
+    <text x="168" y="556">Oct 1, 10:30 AM</text>
+    <text x="630" y="556" text-anchor="middle">Oct 2, 8:30 PM</text>
+    <text x="1090" y="556" text-anchor="end">Oct 4, 10:42 AM</text>
+  </g>
+  <rect x="76" y="586" width="170" height="38" rx="19" fill="#1b2230" stroke="#384256"/>
+  <text x="161" y="611" fill="#dce3ef" font-family="Inter,Segoe UI,sans-serif" font-size="15" text-anchor="middle">Pin selected point</text>
+  <text x="270" y="610" fill="#9da7bb" font-family="Inter,Segoe UI,sans-serif" font-size="15">Tap, move across the chart, or use ← → to inspect points</text>
+</svg>

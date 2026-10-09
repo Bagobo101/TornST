@@ -329,8 +329,6 @@
     .footnote{padding:16px 14px 0;}
     .stock-top{flex-wrap:wrap;}
     .stock-top .price{margin-left:auto;}
-    .thresh-panel{flex-direction:column;}
-    .thresh-panel .field{width:100%; min-width:0; max-width:100%;}
   }
   .license-credit{margin-top:10px; color:var(--bone-dim);}
   .license-credit a{color:var(--gold-dim);}
@@ -462,16 +460,6 @@
   .key-toggle-btn:active{transform:translateY(-50%) scale(0.9);}
   .key-toggle-btn.showing{color:var(--gold);}
 
-  .thresh-panel{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    margin-top:12px;
-    align-items:flex-end;
-  }
-  .thresh-panel .field{flex:1; min-width:130px;}
-  .thresh-panel label{margin-bottom:4px;}
-  .thresh-panel input{width:100%;}
   .owned-field-wrap{display:flex; align-items:center; gap:6px;}
   .owned-field-wrap input{flex:1;}
   .lots-list{display:flex; flex-direction:column; gap:6px; margin-top:6px;}
@@ -966,7 +954,7 @@
   .snooze-field label{margin:0 0 6px;}
   .snooze-field select{width:auto; min-width:145px; padding:7px 10px; font-size:12px;}
   .snooze-status{color:var(--gold-dim); font:11px var(--mono); padding-bottom:8px;}
-  .thresh-panel .position-tags{
+  .position-fields .position-tags{
     flex:0 0 100%;
     width:100%;
     min-width:0;
@@ -975,7 +963,33 @@
     align-items:flex-start;
   }
   .position-tags .armed-tag{max-width:100%; white-space:normal; overflow-wrap:anywhere;}
-  .thresh-panel,.card-details{min-width:0; max-width:100%;}
+  .details-layout,.card-details{min-width:0; max-width:100%;}
+  .details-layout{
+    display:grid;
+    grid-template-columns:minmax(0,0.9fr) minmax(0,1.1fr);
+    gap:20px;
+    margin-top:12px;
+  }
+  .setup-group{min-width:0; padding:14px; border:1px solid var(--edge); border-radius:12px; background:rgba(0,0,0,0.08);}
+  .setup-group h3{margin:0 0 12px; color:var(--bone-dim); font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;}
+  .alert-fields,.position-fields{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;}
+  .alert-fields .field,.position-fields .field{min-width:0; margin:0;}
+  .alert-fields .snooze-field,.position-fields .lots-field,.position-fields .add-lot-field,.position-fields .position-tags{grid-column:1 / -1;}
+  .position-fields > .suggestion-line{grid-column:1 / -1;}
+  .position-fields .add-lot-toggle summary{overflow-wrap:anywhere;}
+  .settings-actions{grid-column:1 / -1; display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding-top:12px; border-top:1px solid var(--edge);}
+  .settings-status{flex:1 1 220px; color:var(--bone-dim); font-size:12px; line-height:1.4;}
+  .settings-actions button{padding:8px 14px;}
+  @media (max-width:700px){
+    .details-layout{grid-template-columns:1fr; gap:12px;}
+  }
+  @media (max-width:480px){
+    .setup-group{padding:12px;}
+    .alert-fields,.position-fields{grid-template-columns:1fr; gap:10px;}
+    .alert-fields .snooze-field,.position-fields .lots-field,.position-fields .add-lot-field,.position-fields .position-tags{grid-column:auto;}
+    .settings-actions{gap:6px;}
+    .settings-actions button{flex:1 1 auto;}
+  }
   @media (max-width:600px){
     .compare-controls{grid-template-columns:1fr;}
     .compare-chart svg{height:180px;}
@@ -1011,6 +1025,76 @@
   @media (max-width:600px){
     .app-nav{gap:4px; margin-bottom:12px; border-radius:12px;}
     .app-nav button{min-width:auto; padding:9px 12px; font-size:12px;}
+  }
+  label,.help .help-body,.card-details summary,.add-lot-body,.add-lot-toggle summary,
+  .benefit-line,.position-line,.range-line,.suggestion-line,.lot-row,.field-warning,
+  .position-table,.armed-tag,.spark-empty,.spark-meta,.spark-legend,.signal-tag,
+  .log-row,.signal-row,.range-picker-label,.range-pill,.income-stat .label,
+  .income-stat .caption,.income-note,.buy-next-row,.comparison-copy,.compare-choice,
+  .compare-legend-item,.compare-empty,.status-line,.change-24h,.stock-top .acr{
+    font-size:13px;
+  }
+  section h2{font-size:17px;}
+  input,select{font-size:16px;}
+  button,a.ghost{font-size:15px;}
+  button.small{font-size:13px;}
+  .stock-top .name{font-size:16px;}
+  .stock-top .price{font-size:18px;}
+  .signal-row .signal-name{font-size:15px;}
+  .signal-row .signal-name .acr,.buy-next-row .bn-name .acr{font-size:12px;}
+  .income-stat .value{font-size:22px;}
+  .buy-next-row .bn-detail{font-size:13px;}
+  .position-table th{font-size:11px;}
+  .compare-y-label,.compare-x-label{font-size:12px;}
+  .spark-tooltip{font-size:13px;}
+  .spark-latest{font-size:13px;}
+  header.title-block p{font-size:16px;}
+  .app-nav button{font-size:14px;}
+  .top-bar-actions #getStartedBtn{font-size:13px;}
+  .spark-actions{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:5px;}
+  .spark-latest{font-family:var(--mono); font-size:12px; color:var(--bone-dim);}
+  .spark-expand-btn{padding:5px 10px; font-size:13.5px; white-space:nowrap;}
+  .graph-dialog{
+    width:min(940px, calc(100% - 24px));
+    max-width:none;
+    max-height:90vh;
+    padding:20px;
+    border:1px solid var(--edge);
+    border-radius:18px;
+    background:var(--panel);
+    color:var(--bone);
+    box-shadow:0 18px 60px rgba(0,0,0,0.55);
+  }
+  .graph-dialog::backdrop{background:rgba(0,0,0,0.72);}
+  .graph-dialog-head{display:flex; align-items:flex-start; justify-content:space-between; gap:14px;}
+  .graph-dialog-title{margin:0; font-size:21px; color:var(--bone);}
+  .graph-dialog-meta{margin:5px 0 14px; color:var(--bone-dim); font:13px var(--mono);}
+  .graph-readout{
+    display:block;
+    min-height:54px;
+    margin-bottom:8px;
+    padding:10px 12px;
+    border:1px solid var(--edge);
+    border-radius:10px;
+    background:var(--panel-2);
+    color:var(--bone);
+    font:600 16px/1.5 var(--mono);
+  }
+  .graph-chart-wrap{width:100%; height:clamp(240px, 48vh, 420px);}
+  .graph-chart{display:block; width:100%; height:100%; touch-action:pan-y; outline:none;}
+  .graph-chart:focus-visible{outline:2px solid var(--gold-dim); outline-offset:3px; border-radius:5px;}
+  .graph-grid{stroke:var(--edge); stroke-width:1;}
+  .graph-axis-label{fill:var(--bone-dim); font:13px var(--mono);}
+  .graph-crosshair{stroke:var(--gold-dim); stroke-width:2; stroke-dasharray:5 4;}
+  .graph-crosshair-dot{fill:var(--gold); stroke:var(--panel); stroke-width:3;}
+  .graph-dialog-actions{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:12px;}
+  .graph-hint{margin:0; color:var(--bone-dim); font-size:13px; line-height:1.5;}
+  @media (max-width:600px){
+    .graph-dialog{padding:16px 12px;}
+    .graph-dialog-title{font-size:18px;}
+    .graph-chart-wrap{height:300px;}
+    .graph-dialog-actions{align-items:flex-start; flex-direction:column;}
+    .spark-actions{align-items:flex-start; flex-direction:column;}
   }
 </style>
 </head>
@@ -1338,8 +1422,22 @@
   </footer>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
+  <dialog class="graph-dialog" id="stockGraphDialog" aria-labelledby="stockGraphTitle">
+    <div class="graph-dialog-head">
+      <h2 class="graph-dialog-title" id="stockGraphTitle">Stock price history</h2>
+      <button type="button" class="ghost small" id="closeStockGraphBtn" aria-label="Close graph">Close</button>
+    </div>
+    <p class="graph-dialog-meta" id="stockGraphMeta"></p>
+    <output class="graph-readout" id="stockGraphReadout" aria-live="polite"></output>
+    <div class="graph-chart-wrap" id="stockGraphChart"></div>
+    <div class="graph-dialog-actions">
+      <button type="button" class="ghost small" id="pinStockGraphPointBtn" aria-pressed="false">Pin selected point</button>
+      <p class="graph-hint">Move across the graph or use the arrow keys to inspect prices. Tap or click to pin a point.</p>
+    </div>
+  </dialog>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <!-- Firebase (shared/crowdsourced price history). See CLOUD SETUP comment at top of the script below. -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -1464,6 +1562,9 @@
   let theme = 'dark';         // display pref: 'dark' (default) | 'light'
   let stocksCache = {};      // id -> {name, acronym, price}
   let watches = {};          // id -> {name, acronym, low, high, armedHigh, armedLow}
+  let cardDrafts = Object.create(null);
+  const openCardIds = new Set();
+  const openAddLotIds = new Set();
   let compareStockIds = [];
   let ranges = {};           // id -> {high, low}  (observed since tracking started)
   let priceHistory = {};     // id -> [[timestamp, price], ...] observed since tracking started, for the live graph
@@ -1590,6 +1691,41 @@
   function persistWatches(){
     try{ localStorage.setItem(STORE_WATCHES, JSON.stringify(watches)); }
     catch(e){ console.error('Could not save watchlist', e); }
+  }
+
+  function cardDraftFor(id){
+    if(!cardDrafts[id] && watches[id]){
+      cardDrafts[id] = JSON.parse(JSON.stringify(watches[id]));
+    }
+    return cardDrafts[id] || null;
+  }
+
+  function updateCardDraftNotice(id){
+    const card = stockList.querySelector(`.stock-card[data-id="${id}"]`);
+    if(!card) return;
+    const dirty = !!cardDrafts[id];
+    const status = card.querySelector('.settings-status');
+    const save = card.querySelector('.save-card-settings');
+    const cancel = card.querySelector('.cancel-card-settings');
+    if(status) status.textContent = dirty ? 'Unsaved changes — save to keep them.' : 'Changes are saved.';
+    if(save) save.disabled = !dirty;
+    if(cancel) cancel.disabled = !dirty;
+  }
+
+  function resetCardDraft(id){
+    const watch = watches[id];
+    if(!watch) return;
+    cardDrafts[id] = {
+      name: watch.name,
+      acronym: watch.acronym,
+      low: null,
+      high: null,
+      pctDropPct: null,
+      pctRisePct: null,
+      owned: 0,
+      armedLow: true,
+      armedHigh: true
+    };
   }
 
   // ===================== CLOUD SETUP (shared/crowdsourced price history) =====================
@@ -1903,17 +2039,25 @@
     'all': null,
   };
 
-  function buildSparkline(id, watch){
+  function graphHistoryFor(id){
     let hist = cloudEnabled ? mergedHistoryFor(id) : asPointArray(priceHistory[id]);
     hist = mergeWithTornsy(id, hist || []);
     const rangeMs = GRAPH_RANGE_MS[graphRange];
     if(rangeMs){
       const cutoff = Date.now() - rangeMs;
       const filtered = hist.filter(pt => pt[0] >= cutoff);
-      // If a tight range leaves too little to draw a meaningful line, fall back to the full
-      // history rather than showing an empty/near-empty graph.
-      hist = filtered.length >= 2 ? filtered : hist;
+      if(filtered.length >= 2) hist = filtered;
     }
+    return hist;
+  }
+
+  function formatGraphTimestamp(timestamp){
+    const date = new Date(timestamp);
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}`;
+  }
+
+  function buildSparkline(id, watch){
+    const hist = graphHistoryFor(id);
     if(!hist || hist.length < 2) return null;
     const svgW = 280, svgH = 32, pad = 2;
     const prices = hist.map(pt => pt[1]);
@@ -1985,7 +2129,85 @@
         <polyline points="${points}" fill="none" style="stroke:${color}; stroke-width:1.6; stroke-linejoin:round; stroke-linecap:round;"/>
         ${markers}
       </svg>`;
-    return { svg, min, max, points: hist.length, thresholds };
+    return { svg, min, max, points: hist.length, latestTimestamp: hist[hist.length - 1][0], thresholds };
+  }
+
+  let expandedGraphHistory = [];
+  let expandedGraphIndex = 0;
+  let expandedGraphPinned = false;
+
+  function renderExpandedGraphPoint(){
+    if(!expandedGraphHistory.length) return;
+    const history = expandedGraphHistory;
+    expandedGraphIndex = Math.max(0, Math.min(history.length - 1, expandedGraphIndex));
+    const [timestamp, price] = history[expandedGraphIndex];
+    const basePrice = history[0][1];
+    const change = basePrice ? (price - basePrice) / basePrice * 100 : 0;
+    const sign = change > 0 ? '+' : '';
+    $('stockGraphReadout').textContent = `${formatGraphTimestamp(timestamp)}  ·  $${price.toFixed(2)}  ·  ${sign}${change.toFixed(2)}% from first point`;
+    const svg = $('stockGraphChart').querySelector('svg');
+    const x = Number(svg.dataset.plotLeft) + expandedGraphIndex * Number(svg.dataset.stepX);
+    const y = Number(svg.dataset.plotBottom) - (price - Number(svg.dataset.min)) /
+      (Number(svg.dataset.max) - Number(svg.dataset.min)) *
+      (Number(svg.dataset.plotBottom) - Number(svg.dataset.plotTop));
+    svg.querySelector('.graph-crosshair').setAttribute('x1', x);
+    svg.querySelector('.graph-crosshair').setAttribute('x2', x);
+    svg.querySelector('.graph-crosshair-dot').setAttribute('cx', x);
+    svg.querySelector('.graph-crosshair-dot').setAttribute('cy', y);
+  }
+
+  function showExpandedStockGraph(id){
+    const stock = stocksCache[id];
+    const history = graphHistoryFor(id);
+    if(!stock || history.length < 2) return;
+    expandedGraphHistory = history;
+    expandedGraphIndex = history.length - 1;
+    expandedGraphPinned = false;
+
+    $('stockGraphTitle').textContent = `${stock.name} (${stock.acronym})`;
+    $('stockGraphMeta').textContent = `${history.length} recorded points · Latest point recorded ${formatGraphTimestamp(history[history.length - 1][0])}`;
+    $('stockGraphDialog').showModal();
+    const chartElement = $('stockGraphChart');
+    const width = Math.max(320, chartElement.clientWidth);
+    const height = Math.max(240, chartElement.clientHeight);
+    const left = 82, right = width - 16, top = 24, bottom = height - 56;
+    const prices = history.map(point => point[1]);
+    const actualMin = prices.reduce((value, price) => Math.min(value, price), Infinity);
+    const actualMax = prices.reduce((value, price) => Math.max(value, price), -Infinity);
+    const actualSpan = actualMax - actualMin;
+    const visualSpan = actualSpan || Math.max(Math.abs(actualMax) * 0.02, 1);
+    const min = actualMin - (visualSpan - actualSpan) / 2;
+    const max = actualMax + (visualSpan - actualSpan) / 2;
+    const stepX = (right - left) / (history.length - 1);
+    const xAt = index => left + index * stepX;
+    const yAt = price => bottom - (price - min) / (max - min) * (bottom - top);
+    const yValues = prices.map(yAt);
+    const line = prices.map((price, index) => `${xAt(index).toFixed(1)},${yValues[index].toFixed(1)}`).join(' ');
+    const grid = Array.from({ length:5 }, (_, index) => {
+      const y = top + index * (bottom - top) / 4;
+      const price = max - index * (max - min) / 4;
+      return `<line class="graph-grid" x1="${left}" y1="${y}" x2="${right}" y2="${y}"/><text class="graph-axis-label" x="${left - 12}" y="${y + 5}" text-anchor="end">$${price.toFixed(2)}</text>`;
+    }).join('');
+    const xLabelIndexes = width < 520 ? [0, history.length - 1] : [0, Math.floor((history.length - 1) / 2), history.length - 1];
+    const xLabels = xLabelIndexes.map((index, labelIndex) => {
+      const date = new Date(history[index][0]);
+      const label = width < 520
+        ? `${date.toLocaleDateString(undefined, { month:'short', day:'numeric' })}, ${date.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' })}`
+        : formatGraphTimestamp(history[index][0]);
+      return `<text class="graph-axis-label" x="${xAt(index)}" y="${bottom + 30}" text-anchor="${labelIndex === 0 ? 'start' : (labelIndex === xLabelIndexes.length - 1 ? 'end' : 'middle')}">${label}</text>`;
+    }).join('');
+    const isUp = prices[prices.length - 1] >= prices[0];
+    const color = isUp ? 'var(--up)' : 'var(--down)';
+    $('stockGraphChart').innerHTML = `<svg class="graph-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" tabindex="0" role="group" aria-label="Interactive stock price history; use left and right arrow keys to inspect points" data-plot-left="${left}" data-plot-right="${right}" data-plot-top="${top}" data-plot-bottom="${bottom}" data-min="${min}" data-max="${max}">
+      ${grid}
+      <polyline points="${line}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+      ${xLabels}
+      <line class="graph-crosshair" x1="${xAt(expandedGraphIndex)}" y1="${top}" x2="${xAt(expandedGraphIndex)}" y2="${bottom}"/>
+      <circle class="graph-crosshair-dot" cx="${xAt(expandedGraphIndex)}" cy="${yValues[expandedGraphIndex]}" r="6"/>
+    </svg>`;
+    $('pinStockGraphPointBtn').setAttribute('aria-pressed', 'false');
+    $('pinStockGraphPointBtn').textContent = 'Pin selected point';
+    renderExpandedGraphPoint();
   }
 
   const COMPARE_COLORS = ['#4f8ef7', '#3ecf8e', '#f4b942', '#e879f9', '#fb7185'];
@@ -2179,6 +2401,54 @@
       showSparkTooltip(touch.clientX, touch.clientY, Number(pt.dataset.t), Number(pt.dataset.p), Number(pt.dataset.pct));
     }
   }, { passive: true });
+
+  stockList.addEventListener('click', event => {
+    const expandButton = event.target instanceof Element ? event.target.closest('[data-expand-graph]') : null;
+    if(expandButton) showExpandedStockGraph(expandButton.dataset.expandGraph);
+  });
+  $('closeStockGraphBtn').addEventListener('click', () => $('stockGraphDialog').close());
+  $('stockGraphDialog').addEventListener('click', event => {
+    if(event.target === $('stockGraphDialog')) $('stockGraphDialog').close();
+  });
+  $('pinStockGraphPointBtn').addEventListener('click', event => {
+    expandedGraphPinned = !expandedGraphPinned;
+    event.currentTarget.setAttribute('aria-pressed', String(expandedGraphPinned));
+    event.currentTarget.textContent = expandedGraphPinned ? 'Unpin point' : 'Pin selected point';
+  });
+  $('stockGraphChart').addEventListener('pointermove', event => {
+    const svg = event.target.closest('svg.graph-chart');
+    if(!svg || expandedGraphPinned) return;
+    const rect = svg.getBoundingClientRect();
+    const left = Number(svg.dataset.plotLeft);
+    const right = Number(svg.dataset.plotRight);
+    const fraction = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const chartX = fraction * svg.viewBox.baseVal.width;
+    expandedGraphIndex = Math.round(Math.max(0, Math.min(1, (chartX - left) / (right - left))) * (expandedGraphHistory.length - 1));
+    renderExpandedGraphPoint();
+  });
+  $('stockGraphChart').addEventListener('pointerdown', event => {
+    const svg = event.target.closest('svg.graph-chart');
+    if(!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const left = Number(svg.dataset.plotLeft);
+    const right = Number(svg.dataset.plotRight);
+    const fraction = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const chartX = fraction * svg.viewBox.baseVal.width;
+    expandedGraphIndex = Math.round(Math.max(0, Math.min(1, (chartX - left) / (right - left))) * (expandedGraphHistory.length - 1));
+    expandedGraphPinned = true;
+    $('pinStockGraphPointBtn').setAttribute('aria-pressed', 'true');
+    $('pinStockGraphPointBtn').textContent = 'Unpin point';
+    renderExpandedGraphPoint();
+  });
+  $('stockGraphChart').addEventListener('keydown', event => {
+    if(event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    expandedGraphIndex += event.key === 'ArrowRight' ? 1 : -1;
+    expandedGraphPinned = true;
+    $('pinStockGraphPointBtn').setAttribute('aria-pressed', 'true');
+    $('pinStockGraphPointBtn').textContent = 'Unpin point';
+    renderExpandedGraphPoint();
+  });
 
   function persistLastPrices(){
     try{
@@ -2519,6 +2789,14 @@
   }
 
   function renderStockList(){
+    stockList.querySelectorAll('.card-details').forEach(details => {
+      if(details.open) openCardIds.add(details.dataset.id);
+      else openCardIds.delete(details.dataset.id);
+    });
+    stockList.querySelectorAll('.add-lot-toggle').forEach(details => {
+      if(details.open) openAddLotIds.add(details.dataset.id);
+      else openAddLotIds.delete(details.dataset.id);
+    });
     renderStockComparison();
     const term = stockFilter.value.trim().toLowerCase();
     const watchedOnly = watchedOnlyToggle.checked;
@@ -2540,8 +2818,9 @@
     const signalsSummary = [];
 
     stockList.innerHTML = all.map(s => {
-      const w = watches[s.id];
-      const checked = !!w;
+      const savedWatch = watches[s.id];
+      const w = cardDrafts[s.id] || savedWatch;
+      const checked = !!savedWatch;
       const low = w && w.low !== null && w.low !== undefined ? w.low : '';
       const high = w && w.high !== null && w.high !== undefined ? w.high : '';
       const owned = w && w.owned ? w.owned : '';
@@ -2570,7 +2849,7 @@
 
       const spark = buildSparkline(s.id, w);
       const sparkBlock = spark
-        ? `<div class="spark-wrap">${spark.svg}<div class="spark-meta"><span>$${spark.min.toFixed(2)}</span><span>${spark.points} checks tracked</span><span>$${spark.max.toFixed(2)}</span></div>${spark.thresholds.length ? `<div class="spark-legend">${spark.thresholds.map(t => t.offChart ? `<span style="color:${t.color}; opacity:0.7;">${t.offChart === 'above' ? '↑' : '↓'} ${t.label} $${t.value.toFixed(2)} (off-chart, too far from recent prices)</span>` : `<span style="color:${t.color};">▬ ${t.label} $${t.value.toFixed(2)}</span>`).join(' ')}</div>` : ''}</div>`
+        ? `<div class="spark-wrap">${spark.svg}<div class="spark-meta"><span>$${spark.min.toFixed(2)}</span><span>${spark.points} checks tracked</span><span>$${spark.max.toFixed(2)}</span></div><div class="spark-actions"><span class="spark-latest">Latest point recorded: ${formatGraphTimestamp(spark.latestTimestamp)}</span><button type="button" class="ghost spark-expand-btn" data-expand-graph="${s.id}" aria-label="Expand stock price graph">Expand graph</button></div>${spark.thresholds.length ? `<div class="spark-legend">${spark.thresholds.map(t => t.offChart ? `<span style="color:${t.color}; opacity:0.7;">${t.offChart === 'above' ? '↑' : '↓'} ${t.label} $${t.value.toFixed(2)} (off-chart, too far from recent prices)</span>` : `<span style="color:${t.color};">▬ ${t.label} $${t.value.toFixed(2)}</span>`).join(' ')}</div>` : ''}</div>`
         : `<div class="spark-wrap spark-empty">Graph builds up as this app checks prices — check again soon.</div>`;
 
       const r = ranges[s.id];
@@ -2770,9 +3049,12 @@
           ${positionLine}
           ${benefitLine}
           ${dividendLine}
-          <details class="card-details">
+          <details class="card-details" data-id="${s.id}" ${openCardIds.has(s.id) ? 'open' : ''}>
             <summary>Alerts &amp; position</summary>
-            <div class="thresh-panel">
+            <div class="details-layout">
+            <div class="setup-group alerts-group">
+            <h3>Price alerts</h3>
+            <div class="alert-fields">
             <div class="field">
               <label>Notify below</label>
               <input type="number" step="0.01" class="low-input" data-id="${s.id}" value="${low}" placeholder="e.g. 720.00">
@@ -2798,11 +3080,16 @@
                   <option value="14400000">4 hours</option>
                   <option value="28800000">8 hours</option>
                   <option value="86400000">24 hours</option>
-                  ${w && Number(w.snoozedUntil) > Date.now() ? '<option value="resume">Resume alerts</option>' : ''}
+                  ${w && Number(w.snoozedUntil) > Date.now() ? '<option value="resume" selected>Resume alerts</option>' : ''}
                 </select>
               </div>
               ${w && Number(w.snoozedUntil) > Date.now() ? `<span class="snooze-status">Paused until ${new Date(Number(w.snoozedUntil)).toLocaleString()}</span>` : ''}
             </div>
+            </div>
+            </div>
+            <div class="setup-group position-group">
+            <h3>Position</h3>
+            <div class="position-fields">
             ${(() => {
               const lots = lotsOf(w);
               const multi = lots.length > 1;
@@ -2839,7 +3126,7 @@
                 </div>` : '';
               const addLotForm = `
                 <div class="field add-lot-field">
-                  <details class="add-lot-toggle">
+                  <details class="add-lot-toggle" data-id="${s.id}" ${openAddLotIds.has(s.id) ? 'open' : ''}>
                     <summary>+ Add another purchase (bought more at a different date/price)</summary>
                     <div class="add-lot-body">
                       <label style="display:block; margin-bottom:4px;">Date</label>
@@ -2880,6 +3167,15 @@
             </div>` : ''}
             ${tags.length ? `<div class="field" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">${tags.join('')}</div>` : ''}
             ${suggestion}
+            </div>
+            </div>
+            <div class="settings-actions">
+              <span class="settings-status">${cardDrafts[s.id] ? 'Unsaved changes — save to keep them.' : 'Changes are saved.'}</span>
+              <button type="button" class="primary save-card-settings" data-id="${s.id}" ${cardDrafts[s.id] ? '' : 'disabled'}>Save</button>
+              <button type="button" class="ghost cancel-card-settings" data-id="${s.id}" ${cardDrafts[s.id] ? '' : 'disabled'}>Cancel</button>
+              <button type="button" class="ghost reset-card-settings" data-id="${s.id}" title="Clear this card's alert and position settings. Save to apply.">Reset</button>
+            </div>
+            </div>
           </div>
           </details>
         </div>`;
@@ -2893,53 +3189,69 @@
           watches[id] = { name: info.name, acronym: info.acronym, low: null, high: null, owned: 0, armedLow: true, armedHigh: true };
         }else{
           delete watches[id];
+          delete cardDrafts[id];
+          openCardIds.delete(id);
+          openAddLotIds.delete(id);
         }
         persistWatches();
         renderStockList();
       });
     });
 
+    stockList.querySelectorAll('.card-details').forEach(details => {
+      details.addEventListener('toggle', () => {
+        if(details.open) openCardIds.add(details.dataset.id);
+        else openCardIds.delete(details.dataset.id);
+      });
+    });
+    stockList.querySelectorAll('.add-lot-toggle').forEach(details => {
+      details.addEventListener('toggle', () => {
+        if(details.open) openAddLotIds.add(details.dataset.id);
+        else openAddLotIds.delete(details.dataset.id);
+      });
+    });
+
     stockList.querySelectorAll('.low-input, .high-input, .owned-input, .pct-drop-input, .pct-rise-input, .avgbuy-input, .lastcollected-input, .payout-input, .buydate-input').forEach(inp => {
-      inp.addEventListener('change', () => {
+      inp.addEventListener('input', () => {
         const id = inp.dataset.id;
-        const w = watches[id];
-        if(!w) return;
+        const draft = cardDraftFor(id);
+        if(!draft) return;
         const curPrice = stocksCache[id] ? Number(stocksCache[id].price) : null;
         if(inp.classList.contains('low-input')){
-          w.low = inp.value === '' ? null : parseFloat(inp.value); w.armedLow = true;
+          draft.low = inp.value === '' ? null : parseFloat(inp.value); draft.armedLow = true;
         }else if(inp.classList.contains('high-input')){
-          w.high = inp.value === '' ? null : parseFloat(inp.value); w.armedHigh = true;
+          draft.high = inp.value === '' ? null : parseFloat(inp.value); draft.armedHigh = true;
         }else if(inp.classList.contains('pct-drop-input')){
-          w.pctDropPct = inp.value === '' ? null : parseFloat(inp.value);
-          w.pctDropBase = curPrice; w.armedPctDrop = true;
+          draft.pctDropPct = inp.value === '' ? null : parseFloat(inp.value);
+          draft.pctDropBase = curPrice; draft.armedPctDrop = true;
         }else if(inp.classList.contains('pct-rise-input')){
-          w.pctRisePct = inp.value === '' ? null : parseFloat(inp.value);
-          w.pctRiseBase = curPrice; w.armedPctRise = true;
+          draft.pctRisePct = inp.value === '' ? null : parseFloat(inp.value);
+          draft.pctRiseBase = curPrice; draft.armedPctRise = true;
         }else if(inp.classList.contains('avgbuy-input')){
-          w.avgBuyPrice = inp.value === '' ? null : parseFloat(inp.value);
+          draft.avgBuyPrice = inp.value === '' ? null : parseFloat(inp.value);
         }else if(inp.classList.contains('lastcollected-input')){
-          w.lastCollected = inp.value === '' ? null : inp.value;
-          w.dividendNotified = false;
+          draft.lastCollected = inp.value === '' ? null : inp.value;
+          draft.dividendNotified = false;
         }else if(inp.classList.contains('payout-input')){
-          w.payoutAmount = inp.value === '' ? null : parseFloat(inp.value);
+          draft.payoutAmount = inp.value === '' ? null : parseFloat(inp.value);
         }else if(inp.classList.contains('buydate-input')){
-          w.buyDate = inp.value === '' ? null : inp.value;
+          draft.buyDate = inp.value === '' ? null : inp.value;
         }else{
-          w.owned = inp.value === '' ? 0 : parseFloat(inp.value);
+          draft.owned = inp.value === '' ? 0 : parseFloat(inp.value);
         }
-        persistWatches();
-        renderStockList();
+        updateCardDraftNotice(id);
       });
     });
 
     stockList.querySelectorAll('.snooze-select').forEach(select => {
       select.addEventListener('change', () => {
-        const watch = watches[select.dataset.id];
-        if(!watch) return;
-        if(select.value === 'resume') watch.snoozedUntil = null;
-        else if(select.value) watch.snoozedUntil = Date.now() + Number(select.value);
+        const id = select.dataset.id;
+        const draft = cardDraftFor(id);
+        if(!draft) return;
+        if(select.value === 'resume') draft.snoozedUntil = null;
+        else if(select.value) draft.snoozedUntil = Date.now() + Number(select.value);
         else return;
-        persistWatches();
+        openCardIds.add(id);
         renderStockList();
       });
     });
@@ -2947,13 +3259,13 @@
     stockList.querySelectorAll('.clear-owned-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
-        const w = watches[id];
-        if(!w) return;
-        w.owned = 0;
-        w.avgBuyPrice = null;
-        w.buyDate = null;
-        w.lots = null;
-        persistWatches();
+        const draft = cardDraftFor(id);
+        if(!draft) return;
+        draft.owned = 0;
+        draft.avgBuyPrice = null;
+        draft.buyDate = null;
+        draft.lots = null;
+        openCardIds.add(id);
         renderStockList();
       });
     });
@@ -2961,8 +3273,8 @@
     stockList.querySelectorAll('.add-lot-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
-        const w = watches[id];
-        if(!w) return;
+        const draft = cardDraftFor(id);
+        if(!draft) return;
         const dateInp = stockList.querySelector(`.new-lot-date[data-id="${id}"]`);
         const sharesInp = stockList.querySelector(`.new-lot-shares[data-id="${id}"]`);
         const priceInp = stockList.querySelector(`.new-lot-price[data-id="${id}"]`);
@@ -2973,12 +3285,12 @@
         }
         const price = priceInp && priceInp.value !== '' ? parseFloat(priceInp.value) : null;
         const date = dateInp && dateInp.value !== '' ? dateInp.value : null;
-        if(!w.lots || !w.lots.length){
-          w.lots = w.owned ? [{ date: w.buyDate || null, shares: Number(w.owned), price: w.avgBuyPrice ? Number(w.avgBuyPrice) : null }] : [];
+        if(!draft.lots || !draft.lots.length){
+          draft.lots = draft.owned ? [{ date: draft.buyDate || null, shares: Number(draft.owned), price: draft.avgBuyPrice ? Number(draft.avgBuyPrice) : null }] : [];
         }
-        w.lots.push({ date, shares, price });
-        recalcFromLots(w);
-        persistWatches();
+        draft.lots.push({ date, shares, price });
+        recalcFromLots(draft);
+        openCardIds.add(id);
         renderStockList();
       });
     });
@@ -2987,20 +3299,20 @@
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
         const idx = parseInt(btn.dataset.lot, 10);
-        const w = watches[id];
-        if(!w || !w.lots) return;
-        w.lots.splice(idx, 1);
-        if(w.lots.length <= 1){
-          if(w.lots.length === 1){
-            w.owned = Number(w.lots[0].shares) || 0;
-            w.avgBuyPrice = w.lots[0].price || null;
-            w.buyDate = w.lots[0].date || null;
+        const draft = cardDraftFor(id);
+        if(!draft || !draft.lots) return;
+        draft.lots.splice(idx, 1);
+        if(draft.lots.length <= 1){
+          if(draft.lots.length === 1){
+            draft.owned = Number(draft.lots[0].shares) || 0;
+            draft.avgBuyPrice = draft.lots[0].price || null;
+            draft.buyDate = draft.lots[0].date || null;
           }
-          w.lots = null;
+          draft.lots = null;
         }else{
-          recalcFromLots(w);
+          recalcFromLots(draft);
         }
-        persistWatches();
+        openCardIds.add(id);
         renderStockList();
       });
     });
@@ -3008,11 +3320,41 @@
     stockList.querySelectorAll('.merge-lots-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
-        const w = watches[id];
-        if(!w) return;
-        mergeLots(w);
-        w.lots = null; // a single merged lot behaves the same as the plain fields — no need to keep the array
+        const draft = cardDraftFor(id);
+        if(!draft) return;
+        mergeLots(draft);
+        draft.lots = null; // a single merged lot behaves the same as the plain fields — no need to keep the array
+        openCardIds.add(id);
+        renderStockList();
+      });
+    });
+
+    stockList.querySelectorAll('.save-card-settings').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        if(!cardDrafts[id]) return;
+        watches[id] = cardDrafts[id];
+        delete cardDrafts[id];
         persistWatches();
+        openCardIds.add(id);
+        renderStockList();
+      });
+    });
+
+    stockList.querySelectorAll('.cancel-card-settings').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        delete cardDrafts[id];
+        openCardIds.add(id);
+        renderStockList();
+      });
+    });
+
+    stockList.querySelectorAll('.reset-card-settings').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        resetCardDraft(id);
+        openCardIds.add(id);
         renderStockList();
       });
     });

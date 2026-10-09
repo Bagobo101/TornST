@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">Readable stock list mockup</title>
+  <desc id="desc">Illustrative stock cards with larger company names, prices, change values, and graph details.</desc>
+  <defs>
+    <linearGradient id="bg" x2="0" y2="1">
+      <stop stop-color="#171c28"/>
+      <stop offset="1" stop-color="#10141d"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000" flood-opacity=".34"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="680" rx="28" fill="#0b0e14"/>
+  <rect x="30" y="30" width="1140" height="620" rx="22" fill="url(#bg)" stroke="#30394b" filter="url(#shadow)"/>
+  <text x="74" y="91" fill="#7ba7f0" font-family="Inter,Segoe UI,sans-serif" font-size="34" font-weight="700">Your watched stocks</text>
+  <text x="74" y="125" fill="#9da7bb" font-family="Inter,Segoe UI,sans-serif" font-size="18">Prices, changes, and graph labels are larger for easier reading</text>
+  <rect x="64" y="153" width="1072" height="208" rx="18" fill="#131720" stroke="#4a6594" stroke-width="2"/>
+  <circle cx="98" cy="193" r="12" fill="#4f8ef7"/>
+  <text x="126" y="201" fill="#e7eaf1" font-family="Inter,Segoe UI,sans-serif" font-size="26" font-weight="700">Torn City Motors</text>
+  <text x="374" y="201" fill="#7ba7f0" font-family="IBM Plex Mono,Consolas,monospace" font-size="19">TCM</text>
+  <text x="894" y="201" fill="#e7eaf1" font-family="IBM Plex Mono,Consolas,monospace" font-size="30" font-weight="600">$742.35</text>
+  <text x="1038" y="201" fill="#3ecf8e" font-family="IBM Plex Mono,Consolas,monospace" font-size="17">+2.4%</text>
+  <polyline points="128,276 206,287 284,267 362,278 440,255 518,265 596,245 674,252 752,235 830,242 908,226 986,234 1064,218" fill="none" stroke="#3ecf8e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M128 276L206 287 284 267 362 278 440 255 518 265 596 245 674 252 752 235 830 242 908 226 986 234 1064 218V292H128Z" fill="#3ecf8e" opacity=".08"/>
+  <g fill="#c3ccdc" font-family="IBM Plex Mono,Consolas,monospace" font-size="15">
+    <text x="91" y="321">$716.20</text>
+    <text x="576" y="321" text-anchor="middle">16 checks tracked</text>
+    <text x="1108" y="321" text-anchor="end">$751.60</text>
+  </g>
+  <text x="91" y="346" fill="#9da7bb" font-family="Inter,Segoe UI,sans-serif" font-size="15">Latest point recorded: Oct 4, 2026, 10:42 AM</text>
+  <rect x="951" y="322" width="153" height="30" rx="15" fill="#171c28" stroke="#384256"/>
+  <text x="1027" y="343" fill="#dce3ef" font-family="Inter,Segoe UI,sans-serif" font-size="14" text-anchor="middle">Expand graph</text>
+  <rect x="64" y="382" width="1072" height="208" rx="18" fill="#131720" stroke="#30394b"/>
+  <circle cx="98" cy="422" r="12" fill="#4f8ef7"/>
+  <text x="126" y="430" fill="#e7eaf1" font-family="Inter,Segoe UI,sans-serif" font-size="26" font-weight="700">Torn City Investments</text>
+  <text x="424" y="430" fill="#7ba7f0" font-family="IBM Plex Mono,Consolas,monospace" font-size="19">TCI</text>
+  <text x="894" y="430" fill="#e7eaf1" font-family="IBM Plex Mono,Consolas,monospace" font-size="30" font-weight="600">$528.10</text>
+  <text x="1038" y="430" fill="#f0576b" font-family="IBM Plex Mono,Consolas,monospace" font-size="17">−1.1%</text>
+  <polyline points="128,490 206,475 284,498 362,468 440,481 518,512 596,493 674,525 752,506 830,518 908,488 986,506 1064,497" fill="none" stroke="#f0576b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#c3ccdc" font-family="IBM Plex Mono,Consolas,monospace" font-size="15">
+    <text x="91" y="550">$511.45</text>
+    <text x="576" y="550" text-anchor="middle">12 checks tracked</text>
+    <text x="1108" y="550" text-anchor="end">$539.80</text>
+  </g>
+  <text x="91" y="576" fill="#9da7bb" font-family="Inter,Segoe UI,sans-serif" font-size="15">Latest point recorded: Oct 4, 2026, 10:38 AM</text>
+  <rect x="848" y="606" width="288" height="28" rx="14" fill="#202b3b"/>
+  <text x="992" y="626" fill="#7ba7f0" font-family="Inter,Segoe UI,sans-serif" font-size="14" text-anchor="middle">Illustrative mockup · sample values</text>
+</svg>

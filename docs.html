@@ -84,7 +84,7 @@
   }
   header.page-head p{
     color:var(--bone-dim);
-    font-size:14.5px;
+    font-size:16px;
     line-height:1.6;
     margin:0;
     max-width:60ch;
@@ -103,7 +103,7 @@
   }
   nav.tabs a{
     font-family:var(--mono);
-    font-size:12.5px;
+    font-size:13.5px;
     text-decoration:none;
     color:var(--bone-dim);
     background:var(--panel);
@@ -127,13 +127,13 @@
     gap:8px;
   }
   section.doc-section h3{
-    font-size:14.5px;
+    font-size:15.5px;
     font-weight:700;
     color:var(--gold-dim);
     margin:22px 0 8px;
   }
   section.doc-section [id]{scroll-margin-top:110px;}
-  section.doc-section p{line-height:1.7; color:var(--bone-dim); font-size:14.5px; margin:0 0 14px;}
+  section.doc-section p{line-height:1.7; color:var(--bone-dim); font-size:16px; margin:0 0 14px;}
   section.doc-section strong{color:var(--bone);}
 
   .card{
@@ -148,12 +148,12 @@
   .card.good{border-color:var(--up);}
   .card.good h3{color:var(--up);}
 
-  table.scope-table{width:100%; border-collapse:separate; border-spacing:0 6px; font-size:13.5px;}
+  table.scope-table{width:100%; border-collapse:separate; border-spacing:0 6px; font-size:14.5px;}
   table.scope-table th{
     text-align:left;
     color:var(--bone-dim);
     font-weight:600;
-    font-size:10.5px;
+    font-size:12px;
     text-transform:uppercase;
     letter-spacing:0.05em;
     padding:0 12px 6px;
@@ -169,7 +169,7 @@
   table.scope-table td:last-child{border-right:1px solid var(--edge); border-radius:0 10px 10px 0;}
   .table-scroll{max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;}
 
-  ul.plain, ol.plain{margin:0 0 14px; padding-left:20px; color:var(--bone-dim); font-size:14.5px; line-height:1.7;}
+  ul.plain, ol.plain{margin:0 0 14px; padding-left:20px; color:var(--bone-dim); font-size:16px; line-height:1.7;}
   ul.plain li, ol.plain li{margin-bottom:6px;}
   ul.plain strong, ol.plain strong{color:var(--bone);}
 
@@ -178,17 +178,17 @@
     margin-top:40px;
     padding-top:20px;
     color:var(--bone-dim);
-    font-size:12.5px;
+    font-size:13.5px;
     font-family:var(--mono);
   }
 
   @media (max-width:480px){
     .top-bar{gap:8px; padding:10px 12px;}
-    .top-bar-brand{font-size:12px; white-space:nowrap;}
-    .top-bar a.back{padding:7px 10px; font-size:12px; white-space:nowrap;}
+    .top-bar-brand{font-size:13px; white-space:nowrap;}
+    .top-bar a.back{padding:7px 10px; font-size:13px; white-space:nowrap;}
     .wrap{padding:24px 14px 64px;}
     header.page-head h1{font-size:23px;}
-    header.page-head p{font-size:14px;}
+    header.page-head p{font-size:15.5px;}
     nav.tabs{
       top:49px;
       flex-wrap:nowrap;
@@ -201,7 +201,7 @@
       padding:9px 14px;
     }
     nav.tabs::-webkit-scrollbar{display:none;}
-    nav.tabs a{flex:0 0 auto; padding:8px 12px; font-size:12px;}
+    nav.tabs a{flex:0 0 auto; padding:8px 12px; font-size:13.5px;}
     section.doc-section{scroll-margin-top:100px;}
     table.scope-table{min-width:460px;}
     .card{padding:15px 14px;}
@@ -272,7 +272,8 @@
 
     <h3 id="guide-price-data">Prices, graphs, and alerts</h3>
     <p>Prices are requested directly from Torn's official API using your key in your browser. Nothing is sent anywhere else for the price check. “Sync my holdings” makes an additional call using the <code>user: stocks</code> selection to read your share counts; this is optional, and you can enter “You own” manually instead.</p>
-    <p>The session high/low shows the range observed since you started tracking in this app, not the stock's full history. Each stock's line graph shows price points recorded by the app, not Torn's full historical chart. If shared history is enabled, visitors' price points can be combined; otherwise the graph uses this browser's checks (plus any real history you manually loaded from Tornsy).</p>
+    <p>The session high/low shows the range observed since you started tracking in this app, not the stock's full history. Each stock's line graph shows price points recorded by the app, not Torn's full historical chart. If shared history is enabled, visitors' price points can be combined; otherwise the graph uses this browser's checks (plus any real history you manually loaded from Tornsy). The “Latest point recorded” timestamp is the time of the newest point in the graph; it does not mean a new price was recorded at every check.</p>
+    <p>Select <strong>Expand graph</strong> beneath a stock's sparkline to open a larger, touch-friendly chart. Move across the chart or use the left and right arrow keys to inspect a timestamp, price, and change from the first plotted point; tap or click to pin a point. The chart uses the graph range selected in Settings.</p>
     <p>Buy suggestions are simple heuristics based on where the price sits in the range recorded here, not financial advice. Torn's stock market can move against any pattern. Alerts fire once when a threshold is crossed and re-arm after the price moves back between thresholds. Closing the app tab pauses price checks.</p>
 
     <h3 id="guide-settings">Settings</h3>
