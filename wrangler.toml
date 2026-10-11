@@ -4,11 +4,11 @@ compatibility_date = "2026-10-11"
 
 [[kv_namespaces]]
 binding = "BACKGROUND_STATE"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "c9edc3cc7c164c2792eeb5bb48809a74"
 
 [triggers]
 crons = ["*/5 * * * *"]
 
 [vars]
 APP_ORIGIN = "https://tornstockalert.duckdns.org"
-VAPID_SUBJECT = "mailto:replace-with-your-email@example.com"
+VAPID_SUBJECT = "mailto:berebervinn@gmail.com"
