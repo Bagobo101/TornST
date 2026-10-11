@@ -72,3 +72,25 @@ self.addEventListener('fetch', (event) => {
     }))
   );
 });
+
+self.addEventListener('push', (event) => {
+  let message = { title: 'Torn Stock Alerts', body: 'A watched stock crossed one of your alert prices.' };
+  try{
+    if(event.data) message = { ...message, ...event.data.json() };
+  }catch(e){ /* use the generic alert if the payload is not JSON */ }
+  event.waitUntil(self.registration.showNotification(message.title, {
+    body: message.body,
+    icon: 'icon-192-maskable.png',
+    badge: 'icon-192-maskable.png',
+    data: { url: 'index.html' }
+  }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || 'index.html', self.registration.scope).href;
+  event.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+    const existing = windows.find(client => client.url === target);
+    return existing ? existing.focus() : clients.openWindow(target);
+  }));
+});

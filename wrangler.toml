@@ -1,0 +1,14 @@
+name = "torn-stock-alerts-background"
+main = "background-worker.js"
+compatibility_date = "2026-10-11"
+
+[[kv_namespaces]]
+binding = "BACKGROUND_STATE"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+APP_ORIGIN = "https://tornstockalert.duckdns.org"
+VAPID_SUBJECT = "mailto:replace-with-your-email@example.com"

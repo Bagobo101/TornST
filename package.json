@@ -1,0 +1,17 @@
+{
+  "name": "torn-stock-alerts-background",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:worker": "node --check background-worker.js",
+    "worker:dev": "wrangler dev",
+    "worker:deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@block65/webcrypto-web-push": "^2.0.0"
+  },
+  "devDependencies": {
+    "web-push": "^3.6.7",
+    "wrangler": "^4.0.0"
+  }
+}

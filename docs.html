@@ -225,6 +225,7 @@
     <a href="#overview">Overview</a>
     <a href="#get-started">Getting started</a>
     <a href="#help">App guide</a>
+    <a href="#background-alerts">Background alerts</a>
     <a href="#api-key">API key usage</a>
     <a href="#data-sharing">Data & sharing</a>
     <a href="#terms">Terms of Service</a>
@@ -233,11 +234,12 @@
 
   <section class="doc-section" id="overview">
     <h2>Overview</h2>
-    <p>Torn Stock Alerts is a free, unofficial companion tool for the browser game Torn. It watches stock prices you choose and notifies you when they cross a price you set. It runs entirely in your browser — there is no backend server operated by this app, and no account system.</p>
+    <p>Torn Stock Alerts is a free, unofficial companion tool for the browser game Torn. By default, it checks prices in your browser while the page is open. You can optionally deploy your own Cloudflare Worker for scheduled checks and alerts while the page is closed; this project does not operate that Worker for you.</p>
     <p>Two outside services are used, both directly from your own browser:</p>
     <ul class="plain">
       <li><strong>Torn's official API</strong> (<code>api.torn.com</code>) — for live stock prices, bank interest rates, your holdings, and your name, using your own API key.</li>
       <li><strong>Firebase Realtime Database</strong> — an optional shared price-history pool, so the price graphs fill in faster using data from every visitor, not just you.</li>
+      <li><strong>Your optional Cloudflare Worker</strong> — if you set it up, it checks your watchlist every five minutes and sends browser push alerts. It stores watch thresholds and push subscription data in your Cloudflare KV namespace and uses a Torn API key you add as a Worker secret.</li>
     </ul>
     <p>Torn's developers have approved this website for publication and use. It is independently developed and operated, not an official Torn service.</p>
   </section>
@@ -250,9 +252,24 @@
       <li><strong>Choose stocks and set alerts.</strong> Check a stock to watch it, then enter a price threshold or a percentage move. The percentage baseline is the current price when you set it.</li>
       <li><strong>Choose how often to check.</strong> In Settings, set the polling interval. The tab must stay open for live checks; background browser tabs may be throttled.</li>
       <li><strong>Turn on notifications.</strong> Allow browser notifications from the app if you want alerts while you're looking at another tab.</li>
+      <li><strong>For alerts while the page is closed,</strong> follow <a href="#background-alerts">Background alerts</a> to deploy your own Worker and connect it in Settings.</li>
       <li><strong>Back up your watchlist.</strong> Copy its backup code or display a QR code to transfer it to another device. Your settings and watchlist are otherwise saved only in this browser.</li>
     </ol>
     <p>You can optionally sync owned shares with a key that includes <code>user: stocks</code>, load real historical prices from Tornsy, and set a cash budget for buy suggestions.</p>
+  </section>
+
+  <section class="doc-section" id="background-alerts">
+    <h2>Background alerts</h2>
+    <p>The optional Worker polls Torn every five minutes and can send fixed-price and percentage threshold alerts while the site is closed. It does not run trades. Session high/low and dividend reminders still require the app to be open. The first setup and any later watchlist changes must be synced from the app.</p>
+    <ol class="plain">
+      <li><strong>Install Node.js</strong> on your computer, open this repository in a terminal, and run <code>npm install</code>.</li>
+      <li><strong>Create push keys.</strong> Run <code>npx web-push generate-vapid-keys --json</code>. Keep the private key secret. Set <code>VAPID_SUBJECT</code> in <code>wrangler.toml</code> to a real <code>mailto:</code> address.</li>
+      <li><strong>Create Cloudflare storage.</strong> Run <code>npx wrangler login</code>, then <code>npx wrangler kv namespace create BACKGROUND_STATE</code>. Copy the returned namespace ID into <code>wrangler.toml</code>, replacing <code>REPLACE_WITH_KV_NAMESPACE_ID</code>.</li>
+      <li><strong>Add secrets.</strong> Run <code>npx wrangler secret put TORN_API_KEY</code> and enter a Torn Public Only key when prompted. Also add <code>VAPID_PUBLIC_KEY</code>, <code>VAPID_PRIVATE_KEY</code>, and <code>BACKGROUND_TOKEN</code> as Worker secrets. Generate the access token with <code>node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"</code>. Enter each secret only at the terminal prompt; never commit it to this repository.</li>
+      <li><strong>Deploy.</strong> Run <code>npm run worker:deploy</code>. Copy the <code>workers.dev</code> URL shown by Wrangler.</li>
+      <li><strong>Connect the app.</strong> Open Settings, enter that Worker URL and the same background token, then select <strong>Enable alerts while closed</strong> and allow notifications. The app uploads your watch thresholds and this device's push subscription to your Worker.</li>
+    </ol>
+    <p>Your Torn key is not uploaded by the website; the Worker uses the separate key you entered as a Cloudflare secret. Cloudflare stores the watchlist and push subscription in your KV namespace. The Worker token is saved in this browser's local storage. Use <strong>Disable background alerts</strong> in the app to remove the remote watchlist and subscriptions. You can also revoke the Torn key from Torn and delete the Worker/KV resources from Cloudflare.</p>
   </section>
 
   <section class="doc-section" id="help">
@@ -261,7 +278,7 @@
     <p>The app is split into tabs: <strong>Stocks</strong> for watchlists and price checks, <strong>Portfolio</strong> for holdings and bank comparisons, <strong>Compare</strong> for relative price charts, <strong>Backup</strong> for moving your watchlist between devices, and <strong>Alerts</strong> for the alert log.</p>
 
     <h3 id="guide-api-key">API key</h3>
-    <p>A Public Only key is enough for stock prices and alerts. The app-specific key builder selects stock prices, bank rates, your stock holdings, and your basic profile name. Keys are stored on this device and sent only to Torn's API. Logging out removes the saved key but keeps your watchlist and history.</p>
+    <p>A Public Only key is enough for stock prices and alerts. The app-specific key builder selects stock prices, bank rates, your stock holdings, and your basic profile name. The website stores its key on this device and sends it only to Torn's API. If you separately enable the optional Worker, you must add a Torn key as a Cloudflare secret so scheduled checks can reach Torn. Logging out of the website does not remove that Worker secret or stop its background checks.</p>
 
     <h3 id="guide-stock-alerts">Watching stocks and reading the list</h3>
     <p>Check a stock to watch it. Fixed “Notify below/above” prices trigger alerts at those prices. A percentage drop or rise uses the current price as its baseline when set, and alerts once it moves by that percentage. Leave fields blank to skip them.</p>
@@ -285,7 +302,7 @@
       <li><strong>Graph range:</strong> changes how much history is displayed, not what the app tracks.</li>
       <li><strong>Notifications:</strong> asks the browser to show alert pop-ups; browser permission is required.</li>
       <li><strong>Load real price history:</strong> manually fetches roughly seven days of hourly public prices from Tornsy. It is not automatic.</li>
-      <li><strong>Reset all app data:</strong> erases the saved key, watchlist, thresholds, portfolio entries, ranges, and alert history on this device. This cannot be undone.</li>
+      <li><strong>Reset all app data:</strong> erases the saved key, watchlist, thresholds, portfolio entries, ranges, and alert history on this device. If connected, it also disables the remote watchlist and this device's push subscription.</li>
       <li><strong>Donate:</strong> opens the developer's Torn profile; donating is optional.</li>
     </ul>
 
@@ -303,7 +320,7 @@
 
     <h3>Where it's stored</h3>
     <div class="card good">
-      <p style="margin:0;">Your key is saved only in this browser's local storage, on this device. It is never sent to any server other than <code>api.torn.com</code> itself — not to this app's developer, not to Firebase, not anywhere else. Clearing your browser data or using "Log out" removes it.</p>
+      <p style="margin:0;">The website saves its key only in this browser's local storage and sends it only to <code>api.torn.com</code>. If you enable background alerts, you separately add a Torn key as a Cloudflare Worker secret; the website does not upload its saved key. Clearing browser data or using "Log out" removes the website's saved key, but does not remove a separately configured Worker secret.</p>
     </div>
 
     <h3>What it's used to fetch</h3>
@@ -323,8 +340,8 @@
     <h3>What it's never used for</h3>
     <ul class="plain">
       <li>No trading, buying, selling, or any action is ever taken in Torn on your behalf.</li>
-      <li>Nothing about your key or account is transmitted to Firebase or any third party.</li>
-      <li>No background automation of any in-game action — this app only ever reads published data.</li>
+      <li>The website does not transmit your key or account information to Firebase. The optional Worker uses only the Torn API key you explicitly configure as its secret.</li>
+      <li>No background automation of any in-game action — scheduled checks only read published stock data.</li>
     </ul>
   </section>
 
@@ -340,11 +357,11 @@
 
     <h3>What stays local only</h3>
     <ul class="plain">
-      <li>Your API key, watchlist, alert thresholds, and avg buy prices</li>
+      <li>By default, your API key, watchlist, alert thresholds, and avg buy prices</li>
       <li>Your display preferences (theme, sort order, compact numbers)</li>
       <li>Your alert history log</li>
     </ul>
-    <p>None of the above is ever shared, synced, or visible to anyone else using this app.</p>
+    <p>If you enable background alerts, the selected watch thresholds and browser push subscription are sent to the Worker and stored in your Cloudflare KV namespace. They are not shared with other visitors or with this app's developer.</p>
   </section>
 
   <section class="doc-section" id="terms">

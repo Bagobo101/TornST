@@ -1218,6 +1218,21 @@
             <div class="help-body">Turns on your browser's built-in notification pop-ups. Your browser will ask you to allow this once — say yes so alerts can actually show up.</div>
           </details>
         </div>
+        <div class="row">
+          <div>
+            <label for="backgroundWorkerUrl">Background Worker URL</label>
+            <input id="backgroundWorkerUrl" type="url" placeholder="https://your-worker.workers.dev" autocomplete="url">
+          </div>
+          <div>
+            <label for="backgroundToken">Worker access token</label>
+            <input id="backgroundToken" type="password" placeholder="Enter your private token" autocomplete="off">
+          </div>
+        </div>
+        <div class="row" style="gap:10px;">
+          <button class="ghost" id="enableBackgroundBtn">Enable alerts while closed</button>
+          <button class="ghost" id="disableBackgroundBtn">Disable background alerts</button>
+          <div class="status-line" id="backgroundStatus" role="status"></div>
+        </div>
         <div class="row" style="gap:10px;">
           <button class="ghost" id="loadTornsyBtn"><span class="icon-slot" data-icon="trendingUp"></span>Load real price history</button>
           <details class="help">
@@ -1229,7 +1244,7 @@
           <button class="ghost" id="resetAllBtn" style="border-color:var(--down); color:var(--down);">Reset all app data</button>
           <details class="help">
             <summary>?</summary>
-            <div class="help-body">Wipes everything this app has saved on this device — your API key, watchlist, thresholds, portfolio entries, ranges, and alert history — and reloads to a blank slate. This can't be undone; back up your watchlist first if you want to keep it.</div>
+            <div class="help-body">Wipes everything this app has saved on this device — your API key, watchlist, thresholds, portfolio entries, ranges, and alert history — and reloads to a blank slate. If connected, it also disables this device's background alerts. This can't be undone; back up your watchlist first if you want to keep it.</div>
           </details>
         </div>
         <div class="row" style="gap:10px;">
@@ -1520,6 +1535,11 @@
   });
 
   const notifBtn = $('notifBtn');
+  const backgroundWorkerUrlInput = $('backgroundWorkerUrl');
+  const backgroundTokenInput = $('backgroundToken');
+  const enableBackgroundBtn = $('enableBackgroundBtn');
+  const disableBackgroundBtn = $('disableBackgroundBtn');
+  const backgroundStatus = $('backgroundStatus');
   const stockFilter = $('stockFilter');
   const watchedOnlyToggle = $('watchedOnlyToggle');
   const stockList = $('stockList');
@@ -1589,6 +1609,8 @@
   const STORE_WATCHED_ONLY = 'torn-stock-watched-only';
   const STORE_LAST_PRICES = 'torn-stock-last-prices';
   const STORE_ALERT_LOG = 'torn-stock-alert-log';
+  const STORE_BACKGROUND_URL = 'torn-stock-background-url';
+  const STORE_BACKGROUND_TOKEN = 'torn-stock-background-token';
   let prevVisitPrices = {};   // prices as of your last visit, frozen at load time for comparison
   let alertLog = [];          // { time, title, body }, newest first, capped at 50
   let lastCheckTime = null;   // ms epoch of the last successful poll
@@ -1606,6 +1628,10 @@
       const k = localStorage.getItem(STORE_KEY);
       if(k){ apiKey = k; keyInput.value = apiKey; }
     }catch(e){ /* storage unavailable */ }
+    try{
+      backgroundWorkerUrlInput.value = localStorage.getItem(STORE_BACKGROUND_URL) || '';
+      backgroundTokenInput.value = localStorage.getItem(STORE_BACKGROUND_TOKEN) || '';
+    }catch(e){ /* background service is optional */ }
     try{
       const un = localStorage.getItem(STORE_USERNAME);
       if(un){ userName = un; }
@@ -1686,11 +1712,13 @@
       updateTourKeyGate();
       if(!userName) fetchUserName();
     }
+    syncBackgroundWatchlist();
   }
 
   function persistWatches(){
     try{ localStorage.setItem(STORE_WATCHES, JSON.stringify(watches)); }
     catch(e){ console.error('Could not save watchlist', e); }
+    syncBackgroundWatchlist();
   }
 
   function cardDraftFor(id){
@@ -2488,9 +2516,25 @@
   $('tornsyPromptLoadBtn').addEventListener('click', loadRealHistoryFromTornsy);
   $('tornsyPromptDismissBtn').addEventListener('click', dismissTornsyPrompt);
 
-  resetAllBtn.addEventListener('click', () => {
+  resetAllBtn.addEventListener('click', async () => {
     if(resetAllBtn.dataset.confirming === '1'){
-      [STORE_KEY, STORE_USERNAME, STORE_WATCHES, STORE_RANGES, STORE_BUDGET, STORE_WATCHED_ONLY, STORE_LAST_PRICES, STORE_ALERT_LOG, STORE_TORNSY_PROMPT_SEEN, STORE_TORNSY_HISTORY, STORE_HISTORY, STORE_COMPARE_STOCKS].forEach(k => {
+      const { url, token } = backgroundConfig();
+      if(url && token){
+        try{
+          await backgroundRequest('/api/background', { method: 'DELETE' });
+        }catch(error){
+          setStatus(settingsStatus, `Background alerts could not be stopped; reset canceled (${error.message}).`, 'err');
+          return;
+        }
+      }
+      if('serviceWorker' in navigator){
+        try{
+          const registration = await navigator.serviceWorker.ready;
+          const subscription = await registration.pushManager.getSubscription();
+          if(subscription) await subscription.unsubscribe();
+        }catch(e){ /* remote subscriptions were already removed */ }
+      }
+      [STORE_KEY, STORE_USERNAME, STORE_WATCHES, STORE_RANGES, STORE_BUDGET, STORE_WATCHED_ONLY, STORE_LAST_PRICES, STORE_ALERT_LOG, STORE_TORNSY_PROMPT_SEEN, STORE_TORNSY_HISTORY, STORE_HISTORY, STORE_COMPARE_STOCKS, STORE_BACKGROUND_URL, STORE_BACKGROUND_TOKEN].forEach(k => {
         try{ localStorage.removeItem(k); }catch(e){ /* non-fatal */ }
       });
       location.reload();
@@ -2622,6 +2666,106 @@
       sendNotification('Torn Stock Alerts', "You'll be notified here when a stock crosses your price.");
     }else{
       setStatus(pollStatus, 'Notifications were blocked — enable them in your browser settings to get alerts.', 'err');
+    }
+  });
+
+  function backgroundConfig(){
+    return {
+      url: backgroundWorkerUrlInput.value.trim().replace(/\/$/, ''),
+      token: backgroundTokenInput.value.trim()
+    };
+  }
+
+  async function backgroundRequest(path, options = {}){
+    const { url, token } = backgroundConfig();
+    if(!url || !token) throw new Error('Enter the Worker URL and access token first.');
+    const response = await fetch(`${url}${path}`, {
+      ...options,
+      headers: { ...(options.headers || {}), Authorization: `Bearer ${token}` }
+    });
+    const result = await response.json().catch(() => ({}));
+    if(!response.ok) throw new Error(result.error || `Worker request failed (${response.status}).`);
+    return result;
+  }
+
+  function pushKeyBytes(value){
+    const padding = '='.repeat((4 - value.length % 4) % 4);
+    const decoded = atob((value + padding).replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from(decoded, character => character.charCodeAt(0));
+  }
+
+  async function syncBackgroundWatchlist(){
+    const { url, token } = backgroundConfig();
+    if(!url || !token) return false;
+    try{
+      const list = Object.entries(watches).map(([stockId, watch]) => ({ ...watch, stockId }));
+      await backgroundRequest('/api/watchlist', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ watches: list })
+      });
+      setStatus(backgroundStatus, 'Background watchlist synced.', 'ok');
+      return true;
+    }catch(error){
+      setStatus(backgroundStatus, error.message || 'Could not sync background watchlist.', 'err');
+      return false;
+    }
+  }
+
+  enableBackgroundBtn.addEventListener('click', async () => {
+    const { url, token } = backgroundConfig();
+    if(!url || !token){
+      setStatus(backgroundStatus, 'Enter the Worker URL and access token first.', 'err');
+      return;
+    }
+    try{
+      const parsedUrl = new URL(url);
+      if(parsedUrl.protocol !== 'https:') throw new Error('The Worker URL must use HTTPS.');
+      localStorage.setItem(STORE_BACKGROUND_URL, url);
+      localStorage.setItem(STORE_BACKGROUND_TOKEN, token);
+      if(!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)){
+        throw new Error('This browser does not support background push notifications.');
+      }
+      const permission = await Notification.requestPermission();
+      if(permission !== 'granted') throw new Error('Allow notifications in your browser to enable background alerts.');
+      const registration = await navigator.serviceWorker.ready;
+      const keyResponse = await fetch(`${url}/api/push-key`);
+      const keyData = await keyResponse.json();
+      if(!keyResponse.ok || !keyData.publicKey) throw new Error('Could not get the Worker push key.');
+      let subscription = await registration.pushManager.getSubscription();
+      if(!subscription){
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: pushKeyBytes(keyData.publicKey)
+        });
+      }
+      await backgroundRequest('/api/subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subscription)
+      });
+      if(!await syncBackgroundWatchlist()) throw new Error('Push is registered, but the watchlist did not sync. Check the Worker URL and token.');
+      setStatus(backgroundStatus, 'Background alerts enabled on this device.', 'ok');
+    }catch(error){
+      setStatus(backgroundStatus, error.message || 'Could not enable background alerts.', 'err');
+    }
+  });
+
+  disableBackgroundBtn.addEventListener('click', async () => {
+    try{
+      await backgroundRequest('/api/background', { method: 'DELETE' });
+      if('serviceWorker' in navigator){
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if(subscription) await subscription.unsubscribe();
+      }
+      localStorage.removeItem(STORE_BACKGROUND_URL);
+      localStorage.removeItem(STORE_BACKGROUND_TOKEN);
+      backgroundWorkerUrlInput.value = '';
+      backgroundTokenInput.value = '';
+      setStatus(backgroundStatus, 'Background checks and push alerts are disabled.', 'ok');
+    }catch(error){
+      setStatus(backgroundStatus, error.message || 'Could not disable background alerts.', 'err');
     }
   });
 
