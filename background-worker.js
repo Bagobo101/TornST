@@ -167,7 +167,7 @@ function json(value, status, env) {
 function withCors(response, env) {
   const headers = new Headers(response.headers);
   headers.set('Access-Control-Allow-Origin', env.APP_ORIGIN || 'https://tornstockalert.duckdns.org');
-  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   headers.set('Access-Control-Allow-Headers', 'Authorization, Content-Type');
   headers.set('Vary', 'Origin');
   return new Response(response.body, { status: response.status, headers });
