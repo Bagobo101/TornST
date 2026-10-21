@@ -10,7 +10,7 @@ Add your Torn API key in the app. A Public Only key is enough for prices, bank r
 
 ## Background alerts (optional)
 
-The Cloudflare Worker checks watched thresholds every five minutes and can send push notifications while the app is closed. It is optional and must be deployed to your own Cloudflare account. It needs a KV namespace and the secrets `TORN_API_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `BACKGROUND_TOKEN`.
+The Cloudflare Worker checks watched thresholds every five minutes and can send push notifications while the app is closed. It is optional. The app ships with a built-in shared Worker URL, and each device authenticates with its own auto-generated secret, so users do not need to deploy anything. The Worker is multi-user: every device has its own record (watchlist and push subscription), registrations are capped by `MAX_USERS`, and records inactive for 90 days are removed. To run your own instead, deploy it to your Cloudflare account; it needs a KV namespace and the secrets `TORN_API_KEY`, `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`. `BACKGROUND_TOKEN` is now optional and only keeps a pre-existing single-user setup working (its data is migrated automatically).
 
 Install dependencies and check the Worker syntax:
 
