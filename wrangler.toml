@@ -12,3 +12,4 @@ crons = ["*/5 * * * *"]
 [vars]
 APP_ORIGIN = "https://tornstockalert.duckdns.org"
 VAPID_SUBJECT = "mailto:berebervinn@gmail.com"
+MAX_USERS = "100"
