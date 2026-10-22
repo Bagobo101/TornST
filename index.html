@@ -1218,16 +1218,20 @@
             <div class="help-body">Turns on your browser's built-in notification pop-ups. Your browser will ask you to allow this once — say yes so alerts can actually show up.</div>
           </details>
         </div>
-        <div class="row">
-          <div>
-            <label for="backgroundWorkerUrl">Background Worker URL</label>
-            <input id="backgroundWorkerUrl" type="url" placeholder="https://your-worker.workers.dev" autocomplete="url">
+        <details style="margin:4px 0;">
+          <summary style="cursor:pointer; font-family:var(--slab); font-weight:700; font-size:12.5px; color:var(--gold-dim);">Advanced: use my own worker</summary>
+          <div class="income-note">Most people can ignore this — "Enable alerts while closed" works out of the box using the shared service. Only fill these in if you deployed your own Worker.</div>
+          <div class="row">
+            <div>
+              <label for="backgroundWorkerUrl">Background Worker URL</label>
+              <input id="backgroundWorkerUrl" type="url" placeholder="Leave blank to use the shared service" autocomplete="url">
+            </div>
+            <div>
+              <label for="backgroundToken">Worker access token</label>
+              <input id="backgroundToken" type="password" placeholder="Auto-generated — leave blank" autocomplete="off">
+            </div>
           </div>
-          <div>
-            <label for="backgroundToken">Worker access token</label>
-            <input id="backgroundToken" type="password" placeholder="Enter your private token" autocomplete="off">
-          </div>
-        </div>
+        </details>
         <div class="row" style="gap:10px;">
           <button class="ghost" id="enableBackgroundBtn">Enable alerts while closed</button>
           <button class="ghost" id="disableBackgroundBtn">Disable background alerts</button>
@@ -1611,6 +1615,10 @@
   const STORE_ALERT_LOG = 'torn-stock-alert-log';
   const STORE_BACKGROUND_URL = 'torn-stock-background-url';
   const STORE_BACKGROUND_TOKEN = 'torn-stock-background-token';
+  // Shared background-alerts service. Each device gets its own random secret (generated on first
+  // use), so people don't need to deploy a worker or share a token. "Advanced" lets power users
+  // point at their own worker instead.
+  const DEFAULT_BACKGROUND_URL = 'https://torn-stock-alerts-background.bagobo101.workers.dev';
   let prevVisitPrices = {};   // prices as of your last visit, frozen at load time for comparison
   let alertLog = [];          // { time, title, body }, newest first, capped at 50
   let lastCheckTime = null;   // ms epoch of the last successful poll
@@ -2671,14 +2679,23 @@
 
   function backgroundConfig(){
     return {
-      url: backgroundWorkerUrlInput.value.trim().replace(/\/$/, ''),
+      url: (backgroundWorkerUrlInput.value.trim() || DEFAULT_BACKGROUND_URL).replace(/\/$/, ''),
       token: backgroundTokenInput.value.trim()
     };
   }
 
+  // Each device uses its own random secret as its "account" on the shared worker.
+  function ensureBackgroundToken(){
+    if(backgroundTokenInput.value.trim()) return backgroundTokenInput.value.trim();
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    const secret = btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    backgroundTokenInput.value = secret;
+    return secret;
+  }
+
   async function backgroundRequest(path, options = {}){
     const { url, token } = backgroundConfig();
-    if(!url || !token) throw new Error('Enter the Worker URL and access token first.');
+    if(!url || !token) throw new Error('Background alerts are not enabled on this device yet.');
     const response = await fetch(`${url}${path}`, {
       ...options,
       headers: { ...(options.headers || {}), Authorization: `Bearer ${token}` }
@@ -2713,11 +2730,8 @@
   }
 
   enableBackgroundBtn.addEventListener('click', async () => {
+    ensureBackgroundToken();
     const { url, token } = backgroundConfig();
-    if(!url || !token){
-      setStatus(backgroundStatus, 'Enter the Worker URL and access token first.', 'err');
-      return;
-    }
     try{
       const parsedUrl = new URL(url);
       if(parsedUrl.protocol !== 'https:') throw new Error('The Worker URL must use HTTPS.');
@@ -2752,6 +2766,10 @@
   });
 
   disableBackgroundBtn.addEventListener('click', async () => {
+    if(!backgroundConfig().token){
+      setStatus(backgroundStatus, 'Background alerts are already off on this device.', 'ok');
+      return;
+    }
     try{
       await backgroundRequest('/api/background', { method: 'DELETE' });
       if('serviceWorker' in navigator){
@@ -2808,12 +2826,33 @@
     }
   }
 
+  // Torn sometimes answers with a transient server-side error (code 9 API disabled, 15 temporary,
+  // 17 "Backend error occurred, please try again"). Those aren't the user's fault and usually clear
+  // within seconds, so retry a few times before giving up. The bank rates are a nice-to-have, so if
+  // the combined stocks+bank request keeps failing, fall back to a stocks-only request so prices
+  // and alerts keep working.
+  async function fetchTornStocks(){
+    const base = 'https://api.torn.com/torn/?selections=';
+    const key = encodeURIComponent(apiKey);
+    const transient = [9, 15, 17];
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    let data = null;
+    for(let attempt = 0; attempt < 3; attempt++){
+      const res = await fetch(`${base}stocks,bank&key=${key}`);
+      data = await res.json();
+      if(!(data && data.error && transient.includes(Number(data.error.code)))) return data;
+      await sleep(800 * (attempt + 1));
+    }
+    const res = await fetch(`${base}stocks&key=${key}`);
+    const fallback = await res.json();
+    return fallback;
+  }
+
   async function refreshStocks(announce){
     if(!apiKey) return false;
     let data;
     try{
-      const res = await fetch(`https://api.torn.com/torn/?selections=stocks,bank&key=${encodeURIComponent(apiKey)}`);
-      data = await res.json();
+      data = await fetchTornStocks();
     }catch(e){
       console.error('Torn API request failed', e);
       setStatus(keyStatus, `Could not reach the Torn API (${(e && e.message) ? e.message : e}). Check your connection.`, 'err');
@@ -4235,8 +4274,7 @@
   async function checkPrices(){
     if(!apiKey){ return; }
     try{
-      const res = await fetch(`https://api.torn.com/torn/?selections=stocks,bank&key=${encodeURIComponent(apiKey)}`);
-      const data = await res.json();
+      const data = await fetchTornStocks();
       if(data.error){ setStatus(pollStatus, `Torn API error: ${data.error.error}`, 'err'); return; }
       if(!data.stocks || Object.keys(data.stocks).length === 0){
         stocksCache = {};
